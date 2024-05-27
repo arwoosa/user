@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"oosa/internal/auth"
+	"oosa/internal/config"
 	"oosa/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -79,7 +80,7 @@ func GetLineAccessToken(params AuthLineRequest) (*LineAccessTokenResponse, error
 	tokenRequest := LineAccessTokenRequest{
 		GrantType:    "authorization_code",
 		Code:         params.Code,
-		RedirectURI:  "http://localhost:6721/auth/line",
+		RedirectURI:  config.APP.OauthLineRedirect,
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	}

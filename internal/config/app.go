@@ -15,6 +15,7 @@ type AppConfig struct {
 	DbApiDatabase       string
 	DbApiUsername       string
 	DbApiPassword       string
+	OauthLineRedirect   string
 }
 
 var APP AppConfig
@@ -33,4 +34,5 @@ func InitialiseConfig() {
 	APP.DbApiDatabase = os.Getenv("DB_API_DATABASE")
 	APP.DbApiUsername = os.Getenv("DB_API_USERNAME")
 	APP.DbApiPassword = os.Getenv("DB_API_PASSWORD")
+	APP.OauthLineRedirect = os.Getenv("OAUTH_LINE_REDIRECT_URL")
 }
