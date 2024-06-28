@@ -229,6 +229,12 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 		return
 	}
 
+	isBusiness := false
+
+	if payload.IsBusiness {
+		isBusiness = true
+	}
+
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			newUUID := uuid.New()
@@ -247,6 +253,7 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 				UsersSettingVisCollabLog:          1,
 				UsersSettingVisFollow:             1,
 				UsersIsSubscribed:                 false,
+				UsersIsBusiness:                   isBusiness,
 				UsersCreatedAt:                    primitive.NewDateTimeFromTime(time.Now()),
 			}
 			result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)

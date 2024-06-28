@@ -182,6 +182,7 @@ func (uf UserRepository) UserFollowingDelete(c *gin.Context) {
 // @Failure 400 {object} structs.Message
 // @Router /userfollowings [get]
 func (uf UserRepository) RetrieveUserFriends(c *gin.Context) {
+	userName := c.Query("name")
 	userDetail := helpers.GetAuthUser(c)
 
 	// Define pipeline for aggregation
@@ -200,6 +201,13 @@ func (uf UserRepository) RetrieveUserFriends(c *gin.Context) {
 			"users_avatar": "$user.users_avatar",
 			"_id":          0,
 		}},
+	}
+
+	if userName != "" {
+		match := bson.M{"$match": bson.M{
+			"users_name": bson.M{"$regex": userName, "$options": "i"},
+		}}
+		pipeline = append(pipeline, match)
 	}
 
 	cursor, err := config.DB.Collection("UserFollowings").Aggregate(context.TODO(), pipeline)
