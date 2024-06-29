@@ -8,14 +8,18 @@ import (
 )
 
 type AppConfig struct {
-	OauthGoogleClientId string
-	AppPort             string
-	DbApiHost           string
-	DbApiPort           string
-	DbApiDatabase       string
-	DbApiUsername       string
-	DbApiPassword       string
-	OauthLineRedirect   string
+	OauthGoogleClientId        string
+	AppPort                    string
+	DbApiHost                  string
+	DbApiPort                  string
+	DbApiDatabase              string
+	DbApiUsername              string
+	DbApiPassword              string
+	OauthLineRedirect          string
+	CloudflareImageAuthToken   string
+	ClourdlareImageAccountId   string
+	ClourdlareImageAccountHash string
+	ClourdlareImageDeliveryUrl string
 }
 
 var APP AppConfig
@@ -35,4 +39,8 @@ func InitialiseConfig() {
 	APP.DbApiUsername = os.Getenv("DB_API_USERNAME")
 	APP.DbApiPassword = os.Getenv("DB_API_PASSWORD")
 	APP.OauthLineRedirect = os.Getenv("OAUTH_LINE_REDIRECT_URL")
+	APP.CloudflareImageAuthToken = os.Getenv("CLOUDFLARE_IMAGE_AUTH_TOKEN")
+	APP.ClourdlareImageAccountId = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_ID")
+	APP.ClourdlareImageAccountHash = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_HASH")
+	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
 }
