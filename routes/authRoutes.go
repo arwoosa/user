@@ -8,20 +8,34 @@ import (
 )
 
 func AuthRoutes(r *gin.Engine) *gin.Engine {
-	repository := repository.AuthRepository{}
+	authRepo := repository.AuthRepository{}
+	forgetPasswordRepo := repository.ForgetPasswordRepository{}
 
 	register := r.Group("/register")
 	{
-		register.POST("", repository.RegisterEmail)
+		register.POST("", authRepo.RegisterEmail)
 	}
 
 	main := r.Group("/auth")
 	{
-		main.GET("/", middleware.AuthMiddleware(), repository.Auth)
-		main.POST("/google", repository.AuthGoogle)
-		main.GET("/line", repository.AuthLine)
-		main.POST("/facebook", repository.AuthFacebook)
-		main.POST("/email", repository.AuthEmail)
+		main.POST("/google", authRepo.AuthGoogle)
+		main.GET("/line", authRepo.AuthLine)
+		main.POST("/facebook", authRepo.AuthFacebook)
+		main.POST("/email", authRepo.AuthEmail)
+	}
+
+	auth := main.Group("/", middleware.AuthMiddleware())
+	{
+		auth.GET("/", authRepo.Auth)
+		auth.PUT("/", authRepo.AuthUpdate)
+		auth.PUT("/change-password", authRepo.AuthUpdatePassword)
+		auth.POST("/update-profile-picture", authRepo.AuthUpdateProfilePicture)
+	}
+
+	forgetPassword := r.Group("/forget-password")
+	{
+		forgetPassword.POST("", forgetPasswordRepo.Create)
+		forgetPassword.POST("/:token", forgetPasswordRepo.Update)
 	}
 
 	return r

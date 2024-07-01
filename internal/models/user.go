@@ -7,6 +7,7 @@ type Users struct {
 	UsersSource                       int                `bson:"users_source,omitempty" json:"users_source"`
 	UsersSourceId                     string             `bson:"users_source_id,omitempty" json:"users_source_id"`
 	UsersName                         string             `bson:"users_name,omitempty" json:"users_name"`
+	UsersUsername                     string             `bson:"users_username,omitempty" json:"users_username"`
 	UsersEmail                        string             `bson:"users_email,omitempty" json:"users_email"`
 	UsersPassword                     string             `bson:"users_password,omitempty" json:"users_password"`
 	UsersObject                       string             `bson:"users_object,omitempty" json:"users_object"`
