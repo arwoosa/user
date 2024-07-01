@@ -3,12 +3,14 @@ package repository
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,6 +23,13 @@ type AuthRepository struct{}
 
 type AuthGoogleRequest struct {
 	Credential string `json:"credential"`
+}
+type AuthUpdateRequest struct {
+	UsersUsername string `json:"users_username"`
+}
+type AuthUpdatePasswordRequest struct {
+	Password    string `json:"password" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required"`
 }
 
 /*
@@ -92,6 +101,124 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 func (t AuthRepository) Auth(c *gin.Context) {
 	user, _ := c.Get("user")
 	c.JSON(http.StatusOK, user)
+}
+
+func (t AuthRepository) AuthUpdate(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	var payload AuthUpdateRequest
+
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	if payload.UsersUsername != "" {
+		// Find if username already used
+
+		var User models.Users
+		filter := bson.D{{Key: "users_username", Value: payload.UsersUsername}}
+		config.DB.Collection("Users").FindOne(context.TODO(), filter).Decode(&User)
+
+		if helpers.MongoZeroID(User.UsersId) {
+			filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+			UpdateUsername := models.Users{
+				UsersUsername: payload.UsersUsername,
+			}
+			upd := bson.D{{Key: "$set", Value: UpdateUsername}}
+			config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+		} else {
+			if userDetail.UsersId != User.UsersId {
+				helpers.ResponseError(c, "Username already used")
+				return
+			}
+			helpers.ResponseSuccessMessage(c, "Username did not change")
+			return
+		}
+
+	}
+	c.JSON(http.StatusOK, userDetail)
+}
+
+func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	var User models.Users
+	var payload AuthUpdatePasswordRequest
+
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: userDetail.UsersId}}).Decode(&User)
+
+	checkCredential := helpers.CheckPassword(User.UsersPassword, payload.Password)
+	if !checkCredential {
+		helpers.ResponseError(c, "Unable to change password as old password does not match")
+		return
+	}
+
+	hashedPassword, err := helpers.HashPassword(payload.NewPassword)
+	if err != nil {
+		helpers.ResponseError(c, "Failed to hash password")
+		return
+	}
+
+	filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+	UpdateUser := models.Users{
+		UsersPassword: hashedPassword,
+	}
+	upd := bson.D{{Key: "$set", Value: UpdateUser}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+
+	c.JSON(200, userDetail)
+}
+
+func (t AuthRepository) AuthUpdateProfilePicture(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+
+	file, fileErr := c.FormFile("users_avatar")
+	if fileErr != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "No file is received",
+		})
+		return
+	}
+
+	uploadedFile, err := file.Open()
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Unable to open file",
+		})
+		return
+	}
+
+	b, _ := io.ReadAll(uploadedFile)
+	mimeType := mimetype.Detect(b)
+
+	switch mimeType.String() {
+	case "image/jpeg":
+	case "image/png":
+	default:
+		c.JSON(http.StatusBadRequest, "Mime: "+mimeType.String()+" not supported")
+		return
+	}
+
+	cloudflare := CloudflareRepository{}
+	cloudflareResponse, postErr := cloudflare.Post(c, file)
+	if postErr != nil {
+		helpers.ResponseBadRequestError(c, postErr.Error())
+		return
+	}
+	fileName := cloudflare.ImageDelivery(cloudflareResponse.Result.Id, "public")
+
+	filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+	upd := bson.D{{Key: "$set", Value: models.Users{
+		UsersAvatar: fileName,
+	}}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+
+	c.JSON(http.StatusOK, userDetail)
 }
 
 // AuthLine handles Line authentication.
