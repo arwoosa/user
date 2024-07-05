@@ -16,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/api/idtoken"
 )
 
@@ -25,7 +26,10 @@ type AuthGoogleRequest struct {
 	Credential string `json:"credential"`
 }
 type AuthUpdateRequest struct {
-	UsersUsername string `json:"users_username"`
+	UsersName            string `json:"users_name"`
+	UsersUsername        string `json:"users_username"`
+	UsersEmail           string `json:"users_email"`
+	UsersSettingLanguage string `json:"users_setting_language"`
 }
 type AuthUpdatePasswordRequest struct {
 	Password    string `json:"password" validate:"required"`
@@ -112,31 +116,60 @@ func (t AuthRepository) AuthUpdate(c *gin.Context) {
 		return
 	}
 
+	UpdateUser := models.Users{}
+
 	if payload.UsersUsername != "" {
 		// Find if username already used
-
 		var User models.Users
 		filter := bson.D{{Key: "users_username", Value: payload.UsersUsername}}
 		config.DB.Collection("Users").FindOne(context.TODO(), filter).Decode(&User)
 
 		if helpers.MongoZeroID(User.UsersId) {
-			filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
-			UpdateUsername := models.Users{
-				UsersUsername: payload.UsersUsername,
-			}
-			upd := bson.D{{Key: "$set", Value: UpdateUsername}}
-			config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+			UpdateUser.UsersUsername = payload.UsersUsername
 		} else {
 			if userDetail.UsersId != User.UsersId {
 				helpers.ResponseError(c, "Username already used")
 				return
 			}
-			helpers.ResponseSuccessMessage(c, "Username did not change")
-			return
+			// helpers.ResponseSuccessMessage(c, "Username did not change")
+			// return
 		}
-
 	}
-	c.JSON(http.StatusOK, userDetail)
+
+	if payload.UsersEmail != "" {
+		// Find if email already used
+		var User models.Users
+		filter := bson.D{{Key: "users_email", Value: payload.UsersEmail}}
+		config.DB.Collection("Users").FindOne(context.TODO(), filter).Decode(&User)
+
+		if helpers.MongoZeroID(User.UsersId) {
+			UpdateUser.UsersEmail = payload.UsersEmail
+		} else {
+			if userDetail.UsersId != User.UsersId {
+				helpers.ResponseError(c, "Email already used")
+				return
+			}
+			// helpers.ResponseSuccessMessage(c, "Email did not change")
+			// return
+		}
+	}
+
+	if payload.UsersName != "" {
+		UpdateUser.UsersName = payload.UsersName
+	}
+
+	if payload.UsersSettingLanguage != "" {
+		UpdateUser.UsersSettingLanguage = payload.UsersSettingLanguage
+	}
+
+	filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+
+	var User models.Users
+	upd := bson.D{{Key: "$set", Value: UpdateUser}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+	config.DB.Collection("Users").FindOne(context.TODO(), filters).Decode(&User)
+
+	c.JSON(http.StatusOK, User)
 }
 
 func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
@@ -434,4 +467,97 @@ func (t AuthRepository) AuthEmail(c *gin.Context) {
 	}
 
 	helpers.AuthenticateUser(c, User)
+}
+
+// @Summary RetrieveUserSettings
+// @Description Retrieve user settings
+// @ID RetrieveUserSetting
+// @Produce json
+// @Tags UserFollowings
+// @Success 200 {object} User Settings
+// @Failure 400 {object} structs.Message
+// @Router /userfollowings [get]
+func (t AuthRepository) RetrieveUserSettings(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{"_id": userDetail.UsersId},
+		},
+		{
+			"$project": bson.M{
+				"_id":              0,
+				"users_source":     0,
+				"users_avatar":     0,
+				"users_source_id":  0,
+				"users_name":       0,
+				"users_email":      0,
+				"users_password":   0,
+				"users_object":     0,
+				"users_created_at": 0,
+			},
+		},
+	}
+
+	cursor, err := config.DB.Collection("Users").Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var results []bson.M
+	if err := cursor.All(context.TODO(), &results); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, results[0])
+}
+
+var PrivacySettings = map[int]string{
+	1: "Present to whole user",
+	2: "Only followed user",
+	3: "Only user itself",
+}
+
+// @Summary RetrieveUserSettings
+// @Description Retrieve user settings
+// @ID RetrieveUserSetting
+// @Produce json
+// @Tags UserFollowings
+// @Success 200 {object} User Settings
+// @Failure 400 {object} structs.Message
+// @Router /userfollowings [get]
+func (t AuthRepository) UpdateUserSettings(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+
+	var updateData models.Users
+	if err := c.BindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	filter := bson.M{"_id": userDetail.UsersId}
+	updateFields := bson.M{
+		"users_setting_vis_events":              updateData.UsersSettingVisEvents,
+		"users_setting_vis_achievement_journal": updateData.UsersSettingVisAchievementJournal,
+		"users_setting_vis_collab_log":          updateData.UsersSettingVisCollabLog,
+		"users_setting_vis_follow":              updateData.UsersSettingVisFollow,
+	}
+
+	var updatedUser models.Users
+	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	err := config.DB.Collection("Users").FindOneAndUpdate(context.TODO(), filter, bson.M{"$set": updateFields}, options).Decode(&updatedUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"_id":                                   updatedUser.UsersId,
+		"users_setting_vis_events":              updatedUser.UsersSettingVisEvents,
+		"users_setting_vis_achievement_journal": updatedUser.UsersSettingVisAchievementJournal,
+		"users_setting_vis_collab_log":          updatedUser.UsersSettingVisCollabLog,
+		"users_setting_vis_follow":              updatedUser.UsersSettingVisFollow,
+	})
 }
