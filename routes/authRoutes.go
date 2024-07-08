@@ -38,5 +38,11 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 		forgetPassword.POST("/:token", forgetPasswordRepo.Update)
 	}
 
+	usersetting := main.Group("/setting", middleware.AuthMiddleware())
+	{
+		usersetting.GET("", authRepo.RetrieveUserSettings)
+		usersetting.PUT("", authRepo.UpdateUserSettings)
+	}
+
 	return r
 }
