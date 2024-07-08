@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserRepository struct{}
@@ -229,106 +228,6 @@ func (uf UserRepository) RetrieveUserFriends(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, results)
-}
-
-// @Summary RetrieveUserSettings
-// @Description Retrieve user settings
-// @ID RetrieveUserSetting
-// @Produce json
-// @Tags UserFollowings
-// @Success 200 {object} User Settings
-// @Failure 400 {object} structs.Message
-// @Router /userfollowings [get]
-func (uf UserRepository) RetrieveUserSettings(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{"_id": id},
-		},
-		{
-			"$project": bson.M{
-				"_id":              0,
-				"users_source":     0,
-				"users_avatar":     0,
-				"users_source_id":  0,
-				"users_name":       0,
-				"users_email":      0,
-				"users_password":   0,
-				"users_object":     0,
-				"users_created_at": 0,
-			},
-		},
-	}
-
-	cursor, err := config.DB.Collection("Users").Aggregate(context.TODO(), pipeline)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	var results []bson.M
-	if err := cursor.All(context.TODO(), &results); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	if len(results) == 0 {
-		helpers.ResponseNoData(c, "No user found")
-		return
-	}
-
-	c.JSON(http.StatusOK, results)
-}
-
-// @Summary RetrieveUserSettings
-// @Description Retrieve user settings
-// @ID RetrieveUserSetting
-// @Produce json
-// @Tags UserFollowings
-// @Success 200 {object} User Settings
-// @Failure 400 {object} structs.Message
-// @Router /userfollowings [get]
-func (uf UserRepository) UpdateUserSettings(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	var updateData models.Users
-	if err := c.BindJSON(&updateData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	filter := bson.M{"_id": id}
-	updateFields := bson.M{
-		"users_setting_vis_events":              updateData.UsersSettingVisEvents,
-		"users_setting_vis_achievement_journal": updateData.UsersSettingVisAchievementJournal,
-		"users_setting_vis_collab_log":          updateData.UsersSettingVisCollabLog,
-		"users_setting_vis_follow":              updateData.UsersSettingVisFollow,
-	}
-
-	var updatedUser models.Users
-	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
-	err = config.DB.Collection("Users").FindOneAndUpdate(context.TODO(), filter, bson.M{"$set": updateFields}, options).Decode(&updatedUser)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"_id":                                   updatedUser.UsersId,
-		"users_setting_vis_events":              updatedUser.UsersSettingVisEvents,
-		"users_setting_vis_achievement_journal": updatedUser.UsersSettingVisAchievementJournal,
-		"users_setting_vis_collab_log":          updatedUser.UsersSettingVisCollabLog,
-		"users_setting_vis_follow":              updatedUser.UsersSettingVisFollow,
-	})
 }
 
 func (uf UserRepository) ReadOne(c *gin.Context, UserFollowings *models.UserFollowings, userFollowingId string) error {
