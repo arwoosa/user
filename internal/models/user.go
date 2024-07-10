@@ -9,7 +9,7 @@ type Users struct {
 	UsersName                         string             `bson:"users_name,omitempty" json:"users_name"`
 	UsersUsername                     string             `bson:"users_username,omitempty" json:"users_username"`
 	UsersEmail                        string             `bson:"users_email,omitempty" json:"users_email"`
-	UsersPassword                     string             `bson:"users_password,omitempty" json:"users_password"`
+	UsersPassword                     string             `bson:"users_password,omitempty" json:"-"`
 	UsersObject                       string             `bson:"users_object,omitempty" json:"users_object"`
 	UsersAvatar                       string             `bson:"users_avatar,omitempty" json:"users_avatar"`
 	UsersSettingLanguage              string             `bson:"users_setting_language,omitempty" json:"users_setting_language"`
