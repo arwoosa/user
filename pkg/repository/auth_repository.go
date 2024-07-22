@@ -36,6 +36,10 @@ type AuthUpdatePasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required"`
 }
 
+type AuthUpdateAvatarRequest struct {
+	UsersAvatar string `json:"users_avatar" validate:"required"`
+}
+
 /*
 	User Source
 	1	Google
@@ -69,18 +73,18 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			insert := models.Users{
-				UsersSource:                       1,
-				UsersSourceId:                     googlePayload.Subject,
-				UsersName:                         googlePayload.Claims["name"].(string),
-				UsersObject:                       googlePayload.Subject,
-				UsersAvatar:                       googlePayload.Claims["picture"].(string),
-				UsersSettingLanguage:              "",
-				UsersSettingVisEvents:             1,
-				UsersSettingVisAchievementJournal: 1,
-				UsersSettingVisCollabLog:          1,
-				UsersSettingVisFollow:             1,
-				UsersIsSubscribed:                 false,
-				UsersCreatedAt:                    primitive.NewDateTimeFromTime(time.Now()),
+				UsersSource:                           1,
+				UsersSourceId:                         googlePayload.Subject,
+				UsersName:                             googlePayload.Claims["name"].(string),
+				UsersObject:                           googlePayload.Subject,
+				UsersAvatar:                           googlePayload.Claims["picture"].(string),
+				UsersSettingLanguage:                  "",
+				UsersSettingIsVisibleFriends:          1,
+				UsersSettingIsVisibleStatistics:       1,
+				UsersSettingVisibilityActivitySummary: 1,
+				UsersSettingFriendAutoAdd:             1,
+				UsersIsSubscribed:                     false,
+				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
 			result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
 			config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
@@ -206,6 +210,27 @@ func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
 	c.JSON(200, userDetail)
 }
 
+func (t AuthRepository) AuthUpdateAvatar(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	var User models.Users
+	var payload AuthUpdateAvatarRequest
+
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: userDetail.UsersId}}).Decode(&User)
+	filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+	UpdateUser := models.Users{
+		UsersAvatar: payload.UsersAvatar,
+	}
+	upd := bson.D{{Key: "$set", Value: UpdateUser}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+
+	c.JSON(200, userDetail)
+}
+
 func (t AuthRepository) AuthUpdateProfilePicture(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 
@@ -290,18 +315,18 @@ func (t AuthRepository) AuthLine(c *gin.Context) {
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			insert := models.Users{
-				UsersSource:                       2,
-				UsersSourceId:                     userInfo.UserID,
-				UsersName:                         userInfo.Name,
-				UsersObject:                       userInfo.UserID,
-				UsersAvatar:                       userInfo.Picture,
-				UsersSettingLanguage:              "",
-				UsersSettingVisEvents:             1,
-				UsersSettingVisAchievementJournal: 1,
-				UsersSettingVisCollabLog:          1,
-				UsersSettingVisFollow:             1,
-				UsersIsSubscribed:                 false,
-				UsersCreatedAt:                    primitive.NewDateTimeFromTime(time.Now()),
+				UsersSource:                           2,
+				UsersSourceId:                         userInfo.UserID,
+				UsersName:                             userInfo.Name,
+				UsersObject:                           userInfo.UserID,
+				UsersAvatar:                           userInfo.Picture,
+				UsersSettingLanguage:                  "",
+				UsersSettingIsVisibleFriends:          1,
+				UsersSettingIsVisibleStatistics:       1,
+				UsersSettingVisibilityActivitySummary: 1,
+				UsersSettingFriendAutoAdd:             1,
+				UsersIsSubscribed:                     false,
+				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
 			result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
 			config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
@@ -338,18 +363,18 @@ func (t AuthRepository) AuthFacebook(c *gin.Context) {
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			insert := models.Users{
-				UsersSource:                       4,
-				UsersSourceId:                     payload.Id,
-				UsersName:                         payload.Name,
-				UsersObject:                       payload.Id,
-				UsersAvatar:                       "",
-				UsersSettingLanguage:              "",
-				UsersSettingVisEvents:             1,
-				UsersSettingVisAchievementJournal: 1,
-				UsersSettingVisCollabLog:          1,
-				UsersSettingVisFollow:             1,
-				UsersIsSubscribed:                 false,
-				UsersCreatedAt:                    primitive.NewDateTimeFromTime(time.Now()),
+				UsersSource:                           4,
+				UsersSourceId:                         payload.Id,
+				UsersName:                             payload.Name,
+				UsersObject:                           payload.Id,
+				UsersAvatar:                           "",
+				UsersSettingLanguage:                  "",
+				UsersSettingIsVisibleFriends:          1,
+				UsersSettingIsVisibleStatistics:       1,
+				UsersSettingVisibilityActivitySummary: 1,
+				UsersSettingFriendAutoAdd:             1,
+				UsersIsSubscribed:                     false,
+				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
 			result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
 			config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
@@ -400,21 +425,21 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 			newUUID := uuid.New()
 			uuid := newUUID.String()
 			insert := models.Users{
-				UsersSource:                       3,
-				UsersSourceId:                     uuid,
-				UsersName:                         payload.Name,
-				UsersEmail:                        payload.Email,
-				UsersPassword:                     hashedPassword,
-				UsersObject:                       uuid,
-				UsersAvatar:                       "",
-				UsersSettingLanguage:              "",
-				UsersSettingVisEvents:             1,
-				UsersSettingVisAchievementJournal: 1,
-				UsersSettingVisCollabLog:          1,
-				UsersSettingVisFollow:             1,
-				UsersIsSubscribed:                 false,
-				UsersIsBusiness:                   isBusiness,
-				UsersCreatedAt:                    primitive.NewDateTimeFromTime(time.Now()),
+				UsersSource:                           3,
+				UsersSourceId:                         uuid,
+				UsersName:                             payload.Name,
+				UsersEmail:                            payload.Email,
+				UsersPassword:                         hashedPassword,
+				UsersObject:                           uuid,
+				UsersAvatar:                           "",
+				UsersSettingLanguage:                  "",
+				UsersSettingIsVisibleFriends:          1,
+				UsersSettingIsVisibleStatistics:       1,
+				UsersSettingVisibilityActivitySummary: 1,
+				UsersSettingFriendAutoAdd:             1,
+				UsersIsSubscribed:                     false,
+				UsersIsBusiness:                       isBusiness,
+				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
 			result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
 			config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
@@ -539,12 +564,12 @@ func (t AuthRepository) UpdateUserSettings(c *gin.Context) {
 
 	filter := bson.M{"_id": userDetail.UsersId}
 	updateFields := bson.M{
-		"users_setting_vis_events":              updateData.UsersSettingVisEvents,
-		"users_setting_vis_achievement_journal": updateData.UsersSettingVisAchievementJournal,
-		"users_setting_vis_collab_log":          updateData.UsersSettingVisCollabLog,
-		"users_setting_vis_follow":              updateData.UsersSettingVisFollow,
+		"users_setting_is_visible_friends":          updateData.UsersSettingIsVisibleFriends,
+		"users_setting_is_visible_statistics":       updateData.UsersSettingIsVisibleStatistics,
+		"users_setting_visibility_activity_summary": updateData.UsersSettingVisibilityActivitySummary,
+		"users_setting_friend_auto_add":             updateData.UsersSettingFriendAutoAdd,
 	}
-
+	fmt.Println("TEST")
 	var updatedUser models.Users
 	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	err := config.DB.Collection("Users").FindOneAndUpdate(context.TODO(), filter, bson.M{"$set": updateFields}, options).Decode(&updatedUser)
@@ -553,11 +578,62 @@ func (t AuthRepository) UpdateUserSettings(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"_id":                                   updatedUser.UsersId,
-		"users_setting_vis_events":              updatedUser.UsersSettingVisEvents,
-		"users_setting_vis_achievement_journal": updatedUser.UsersSettingVisAchievementJournal,
-		"users_setting_vis_collab_log":          updatedUser.UsersSettingVisCollabLog,
-		"users_setting_vis_follow":              updatedUser.UsersSettingVisFollow,
-	})
+	c.JSON(http.StatusOK, updatedUser)
+}
+
+func (t AuthRepository) RetrieveBadges(c *gin.Context) {
+	single := c.Query("single")
+	userDetail := helpers.GetAuthUser(c)
+
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{"user_badges_user": userDetail.UsersId},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Badges",
+				"localField":   "user_badges_badge",
+				"foreignField": "_id",
+				"as":           "UserBadgesDetail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: bson.M{"path": "$UserBadgesDetail"},
+		}},
+	}
+
+	if single != "" && single == "true" {
+		agg = append(agg,
+			bson.D{{
+				Key: "$match", Value: bson.M{"UserBadgesDetail.badges_is_once": true},
+			}})
+	} else if single != "" && single == "false" {
+		agg = append(agg,
+			bson.D{{
+				Key: "$match", Value: bson.M{"UserBadgesDetail.badges_is_once": false},
+			}})
+	}
+
+	var results []models.UserBadges
+	cursor, err := config.DB.Collection("UserBadges").Aggregate(context.TODO(), agg)
+	cursor.All(context.TODO(), &results)
+
+	if err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+func (t AuthRepository) RetrieveNotifications(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	var results []models.Notifications
+
+	filter := bson.D{
+		{Key: "notifications_user", Value: userDetail.UsersId},
+	}
+	cursor, _ := config.DB.Collection("Notifications").Find(context.TODO(), filter)
+	cursor.All(context.TODO(), &results)
+
+	c.JSON(200, results)
 }
