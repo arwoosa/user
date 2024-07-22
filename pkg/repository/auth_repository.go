@@ -207,7 +207,8 @@ func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
 	upd := bson.D{{Key: "$set", Value: UpdateUser}}
 	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
 
-	c.JSON(200, userDetail)
+	// c.JSON(200, userDetail)
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated"})
 }
 
 func (t AuthRepository) AuthUpdateAvatar(c *gin.Context) {
@@ -222,6 +223,7 @@ func (t AuthRepository) AuthUpdateAvatar(c *gin.Context) {
 
 	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: userDetail.UsersId}}).Decode(&User)
 	filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+	userDetail.UsersAvatar = payload.UsersAvatar
 	UpdateUser := models.Users{
 		UsersAvatar: payload.UsersAvatar,
 	}
@@ -274,6 +276,7 @@ func (t AuthRepository) AuthUpdateProfilePicture(c *gin.Context) {
 	upd := bson.D{{Key: "$set", Value: models.Users{
 		UsersAvatar: fileName,
 	}}}
+	userDetail.UsersAvatar = fileName
 	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
 
 	c.JSON(http.StatusOK, userDetail)
