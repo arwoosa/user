@@ -29,19 +29,30 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 		auth.GET("/", authRepo.Auth)
 		auth.PUT("/", authRepo.AuthUpdate)
 		auth.PUT("/change-password", authRepo.AuthUpdatePassword)
-		auth.POST("/update-profile-picture", authRepo.AuthUpdateProfilePicture)
-	}
-
-	forgetPassword := r.Group("/forget-password")
-	{
-		forgetPassword.POST("", forgetPasswordRepo.Create)
-		forgetPassword.POST("/:token", forgetPasswordRepo.Update)
+		auth.POST("/profile-picture", authRepo.AuthUpdateProfilePicture)
+		auth.POST("/avatar", authRepo.AuthUpdateAvatar)
 	}
 
 	usersetting := main.Group("/setting", middleware.AuthMiddleware())
 	{
 		usersetting.GET("", authRepo.RetrieveUserSettings)
 		usersetting.PUT("", authRepo.UpdateUserSettings)
+	}
+
+	badges := main.Group("/badges", middleware.AuthMiddleware())
+	{
+		badges.GET("", authRepo.RetrieveBadges)
+	}
+
+	notifications := main.Group("/notifications", middleware.AuthMiddleware())
+	{
+		notifications.GET("", authRepo.RetrieveNotifications)
+	}
+
+	forgetPassword := r.Group("/forget-password")
+	{
+		forgetPassword.POST("", forgetPasswordRepo.Create)
+		forgetPassword.POST("/:token", forgetPasswordRepo.Update)
 	}
 
 	return r
