@@ -79,7 +79,7 @@ func (uf UserRepository) UserFollowingCreate(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "User following created successfully", "inserted_id": result.InsertedID})
 		return
 	} else {
-		c.JSON(http.StatusOK, "Already followed")
+		c.JSON(http.StatusOK, gin.H{"message": "Already followed"})
 	}
 
 }
