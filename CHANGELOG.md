@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.1
+## Changes
+- General changes to fit API Spec
+
 # CHANGELOG 1.1.0
 ## Changes
 User 

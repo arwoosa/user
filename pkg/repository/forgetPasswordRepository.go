@@ -94,6 +94,6 @@ func (t ForgetPasswordRepository) Update(c *gin.Context) {
 	}
 	config.DB.Collection("PasswordResets").UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: PasswordResets.PasswordResetsId}}, updPasswordReset)
 
-	c.JSON(200, "Password updated successfully")
+	c.JSON(200, gin.H{"message": "Password updated successfully"})
 
 }
