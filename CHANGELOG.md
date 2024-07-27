@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.2
+## Changes
+- Bind to Facebook
+- Statistics
+
 # CHANGELOG 1.1.1
 ## Changes
 - General changes to fit API Spec

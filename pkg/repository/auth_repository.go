@@ -640,3 +640,26 @@ func (t AuthRepository) RetrieveNotifications(c *gin.Context) {
 
 	c.JSON(200, results)
 }
+
+func (t AuthRepository) BindFacebook(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	var payload helpers.AuthBindingFacebookRequest
+
+	if err := c.ShouldBind(&payload); err != nil {
+		helpers.ResponseBadRequestError(c, "Empty request body")
+		return
+	}
+
+	oauth := FacebookRepository{}.Retrieve(c, payload.AccessToken)
+
+	if oauth.Id != "" {
+		userDetail.UsersBindingFacebook = payload.Id
+		filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+		upd := bson.D{{Key: "$set", Value: userDetail}}
+		config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+		c.JSON(200, userDetail)
+	} else {
+		c.JSON(400, gin.H{"message": "Invalid facebook token"})
+	}
+
+}
