@@ -53,6 +53,11 @@ type AuthFacebookRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+type AuthBindingFacebookRequest struct {
+	Id          string `json:"id" binding:"required"`
+	AccessToken string `json:"access_token" binding:"required"`
+}
+
 type AuthEmailRequest struct {
 	Name       string `json:"name" validate:"required"`
 	Email      string `json:"email" validate:"required,email"`

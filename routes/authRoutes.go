@@ -24,6 +24,11 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 		main.POST("/email", authRepo.AuthEmail)
 	}
 
+	binding := main.Group("/bind", middleware.AuthMiddleware())
+	{
+		binding.POST("/facebook", authRepo.BindFacebook)
+	}
+
 	auth := main.Group("/", middleware.AuthMiddleware())
 	{
 		auth.GET("/", authRepo.Auth)

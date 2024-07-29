@@ -20,6 +20,7 @@ type AppConfig struct {
 	ClourdlareImageAccountId   string
 	ClourdlareImageAccountHash string
 	ClourdlareImageDeliveryUrl string
+	FacebookUrl                string
 }
 
 var APP AppConfig
@@ -43,4 +44,5 @@ func InitialiseConfig() {
 	APP.ClourdlareImageAccountId = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_ID")
 	APP.ClourdlareImageAccountHash = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_HASH")
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
+	APP.FacebookUrl = os.Getenv("OATH_FACEBOOK_BASE_URL")
 }
