@@ -14,6 +14,7 @@ func RegisterRoutes() *gin.Engine {
 	UserRoutes(r)
 	PaymentRoutes(r)
 	ContactUsRoutes(r)
+	StatisticsRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
