@@ -9,7 +9,7 @@ import (
 )
 
 func Validate(c *gin.Context, arr interface{}) error {
-	var errorList []string
+	errorList := []string{}
 	if err := c.BindJSON(&arr); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": -2, "message": "Validation error! JSON does not match", "data": errorList, "validation": "oosa_api"})
 		return err
@@ -34,7 +34,7 @@ func Validate(c *gin.Context, arr interface{}) error {
 }
 
 func ValidateWithShouldBind(c *gin.Context, obj interface{}) error {
-	var errorList []string
+	errorList := []string{}
 	if err := c.ShouldBind(obj); err != nil {
 		fmt.Printf("error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"code": -2, "message": "Validation error! Request data not complete", "data": errorList, "validation": "oosa_api"})
