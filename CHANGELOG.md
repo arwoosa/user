@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.3
+## Changes
+- Changes in validation errorlist
+- Changes in unauthorized HTTP Code 401 Unauthorised
+- Addition o N5 badges
+
 # CHANGELOG 1.1.2
 ## Changes
 - Bind to Facebook

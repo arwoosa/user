@@ -657,6 +657,8 @@ func (t AuthRepository) BindFacebook(c *gin.Context) {
 		filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
 		upd := bson.D{{Key: "$set", Value: userDetail}}
 		config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+
+		helpers.BadgeAllocate(c, "N5", helpers.BADGE_SOCIAL, primitive.NilObjectID)
 		c.JSON(200, userDetail)
 	} else {
 		c.JSON(400, gin.H{"message": "Invalid facebook token"})
