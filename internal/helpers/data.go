@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"math/rand"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -27,4 +28,8 @@ func RandomString(length int) string {
 		b[i] = characters[rand.Intn(len(characters))]
 	}
 	return string(b)
+}
+
+func MongoTimestampToTime(datetime primitive.DateTime) time.Time {
+	return datetime.Time()
 }

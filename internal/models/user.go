@@ -21,4 +21,14 @@ type Users struct {
 	UsersIsSubscribed                     bool               `bson:"users_is_subscribed,omitempty" json:"users_is_subscribed"`
 	UsersIsBusiness                       bool               `bson:"users_is_business,omitempty" json:"users_is_business"`
 	UsersCreatedAt                        primitive.DateTime `bson:"users_created_at,omitempty" json:"users_created_at"`
+	UsersEventCompleted                   int                `bson:"users_event_completed,omitempty" json:"-"`
+	UsersEventScheduled                   int                `bson:"users_event_scheduled,omitempty" json:"-"`
+	UsersBreathingPoints                  int                `bson:"users_breathing_points,omitempty" json:"users_breathing_points"`
+}
+
+type UsersAgg struct {
+	UsersId     primitive.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	UsersName   string             `bson:"users_name,omitempty" json:"user_name"`
+	UsersEmail  string             `bson:"users_email,omitempty" json:"user_email"`
+	UsersAvatar string             `bson:"users_avatar,omitempty" json:"user_avatar"`
 }
