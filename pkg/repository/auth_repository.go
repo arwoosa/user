@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"oosa/internal/config"
 	"oosa/internal/helpers"
@@ -107,8 +108,9 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Router /auth [get]
 func (t AuthRepository) Auth(c *gin.Context) {
-	user, _ := c.Get("user")
-	c.JSON(http.StatusOK, user)
+	userDetail := helpers.GetAuthUser(c)
+	userDetail.UsersBreathingPoints = t.Breathing(c)
+	c.JSON(http.StatusOK, userDetail)
 }
 
 func (t AuthRepository) AuthUpdate(c *gin.Context) {
@@ -664,4 +666,97 @@ func (t AuthRepository) BindFacebook(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Invalid facebook token"})
 	}
 
+}
+
+func GetEventParticipantStatus(status string) int64 {
+	ParticipantStatus := map[string]int64{
+		"PENDING":  0,
+		"ACCEPTED": 1,
+		"REJECTED": 2,
+	}
+	return ParticipantStatus[status]
+}
+
+func (t AuthRepository) Breathing(c *gin.Context) int {
+	userDetail := helpers.GetAuthUser(c)
+	var results []models.Events
+
+	agg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"event_participants_user":   userDetail.UsersId,
+				"event_participants_status": GetEventParticipantStatus("ACCEPTED"),
+			},
+		}},
+		bson.D{{
+			Key: "$lookup", Value: bson.M{
+				"from":         "Events",
+				"localField":   "event_participants_event",
+				"foreignField": "_id",
+				"as":           "event_participants_event_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$unwind", Value: "$event_participants_event_detail",
+		}},
+		bson.D{{
+			Key: "$replaceRoot", Value: bson.M{
+				"newRoot": "$event_participants_event_detail",
+			},
+		}},
+		bson.D{{
+			Key: "$sort", Value: bson.M{
+				"events_date": -1,
+			},
+		}},
+		bson.D{{
+			Key: "$limit", Value: 1,
+		}},
+	}
+	cursor, err := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), agg)
+	cursor.All(context.TODO(), &results)
+
+	if err != nil {
+		return 0
+	}
+
+	if len(results) == 0 {
+		return 0
+	}
+
+	lastEventDate := helpers.MongoTimestampToTime(results[0].EventsDate)
+	currentTime := time.Now()
+	diff := currentTime.Sub(lastEventDate)
+	numberOfDays := diff.Hours() / 24
+
+	breathingPoints := 100 - int(math.Ceil(numberOfDays))
+
+	var Exp []models.Exp
+	expAgg := mongo.Pipeline{
+		bson.D{{
+			Key: "$match", Value: bson.M{
+				"exp_user": userDetail.UsersId,
+			},
+		}},
+		bson.D{{
+			Key: "$group", Value: bson.M{
+				"_id":        "$exp_user",
+				"exp_points": bson.M{"$sum": "$exp_points"},
+			},
+		}},
+	}
+	cursorExp, _ := config.DB.Collection("Exp").Aggregate(context.TODO(), expAgg)
+	cursorExp.All(context.TODO(), &Exp)
+
+	if len(Exp) > 0 {
+		breathingPoints += Exp[0].ExpPoints
+	}
+
+	if breathingPoints > 100 {
+		breathingPoints = 100
+	} else if breathingPoints < 0 {
+		breathingPoints = 0
+	}
+
+	return breathingPoints
 }

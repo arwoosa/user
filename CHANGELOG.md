@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.4
+## Changes
+- Breathing points
+- OOSA daily award breathing point
+
 # CHANGELOG 1.1.3
 ## Changes
 - Changes in validation errorlist
