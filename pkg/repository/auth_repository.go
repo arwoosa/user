@@ -605,6 +605,9 @@ func (t AuthRepository) RetrieveBadges(c *gin.Context) {
 		bson.D{{
 			Key: "$unwind", Value: bson.M{"path": "$UserBadgesDetail"},
 		}},
+		bson.D{{
+			Key: "$replaceRoot", Value: bson.M{"newRoot": "$UserBadgesDetail"},
+		}},
 	}
 
 	if single != "" && single == "true" {
@@ -619,7 +622,7 @@ func (t AuthRepository) RetrieveBadges(c *gin.Context) {
 			}})
 	}
 
-	var results []models.UserBadges
+	var results []models.Badges
 	cursor, err := config.DB.Collection("UserBadges").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), &results)
 
