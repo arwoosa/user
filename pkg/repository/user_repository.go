@@ -76,6 +76,14 @@ func (uf UserRepository) UserFollowingCreate(c *gin.Context) {
 		}
 
 		result, _ := config.DB.Collection("UserFollowings").InsertOne(context.TODO(), insert)
+		requestId := result.InsertedID.(primitive.ObjectID)
+
+		insert.UserFollowingsId = requestId
+		NotificationMessage := models.NotificationMessage{
+			Message: "{0}發送了好友邀請給你!",
+			Data:    []map[string]interface{}{helpers.NotificationFormatUser(userDetail), helpers.NotificationFormatUserFollowing(insert)},
+		}
+		helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST, payload.UserFollowingsFollowing, NotificationMessage, requestId)
 		c.JSON(http.StatusOK, gin.H{"message": "User following created successfully", "inserted_id": result.InsertedID})
 		return
 	} else {

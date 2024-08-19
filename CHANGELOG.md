@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.5
+## Changes
+- User badges - Change structure
+
 # CHANGELOG 1.1.4
 ## Changes
 - Breathing points
