@@ -238,6 +238,23 @@ func (uf UserRepository) RetrieveUserFriends(c *gin.Context) {
 	c.JSON(http.StatusOK, results)
 }
 
+func (uf UserRepository) RetrieveUsers(c *gin.Context) {
+	userName := c.Query("name")
+	//userDetail := helpers.GetAuthUser(c)
+
+	var results []models.UsersAgg
+
+	filter := bson.D{}
+
+	if userName != "" {
+		filter = append(filter, bson.E{Key: "users_name", Value: bson.M{"$regex": userName, "$options": "i"}})
+	}
+
+	cursor, _ := config.DB.Collection("Users").Find(context.TODO(), filter)
+	cursor.All(context.TODO(), &results)
+	c.JSON(http.StatusOK, results)
+}
+
 func (uf UserRepository) ReadOne(c *gin.Context, UserFollowings *models.UserFollowings, userFollowingId string) error {
 	userDetail := helpers.GetAuthUser(c)
 	idVal := c.Param("id")
