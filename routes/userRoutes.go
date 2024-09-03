@@ -24,6 +24,7 @@ func UserRoutes(r *gin.Engine) *gin.Engine {
 
 	me := r.Group("/user", middleware.AuthMiddleware())
 	{
+		me.GET("", repository.RetrieveUsers)
 		me.GET("/friends", repository.RetrieveUserFriends)
 	}
 
