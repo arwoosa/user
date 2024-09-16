@@ -12,6 +12,7 @@ func RegisterRoutes() *gin.Engine {
 	r := gin.Default()
 	AuthRoutes(r)
 	UserRoutes(r)
+	OosaUserRoutes(r)
 	PaymentRoutes(r)
 	ContactUsRoutes(r)
 	StatisticsRoutes(r)

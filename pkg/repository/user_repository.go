@@ -7,12 +7,14 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserRepository struct{}
@@ -68,7 +70,29 @@ func (uf UserRepository) UserFollowingCreate(c *gin.Context) {
 		{Key: "user_followings_following", Value: payload.UserFollowingsFollowing},
 	}
 	checkUserErr := config.DB.Collection("UserFollowings").FindOne(context.TODO(), filter).Decode(&results)
+
+	var FollowingUser models.Users
+	followingUserErr := OosaUserRepository{}.ReadUserById(payload.UserFollowingsFollowing, &FollowingUser)
+
+	if followingUserErr == mongo.ErrNoDocuments {
+		helpers.ResponseError(c, "Invalid user to follow")
+		return
+	}
+
 	if checkUserErr != nil {
+		countUserCurrent := uf.CountUserFollowing(c, userDetail.UsersId)
+		countUserFollowing := uf.CountUserFollowing(c, payload.UserFollowingsFollowing)
+		friendListLimit := config.APP_LIMIT.FriendListLimit
+
+		if countUserCurrent+1 > friendListLimit {
+			helpers.ResponseError(c, "You cannot add more friends as it has exceeded the allowed limit of "+strconv.Itoa(int(friendListLimit)))
+			return
+		}
+		if countUserFollowing+1 > friendListLimit {
+			helpers.ResponseError(c, "You cannot add "+FollowingUser.UsersName+" as friend as his list has exceeded "+strconv.Itoa(int(friendListLimit)))
+			return
+		}
+
 		insert := models.UserFollowings{
 			UserFollowingsUser:      userDetail.UsersId,
 			UserFollowingsFollowing: payload.UserFollowingsFollowing,
@@ -90,6 +114,13 @@ func (uf UserRepository) UserFollowingCreate(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Already followed"})
 	}
 
+}
+
+func (uf UserRepository) CountUserFollowing(c *gin.Context, userId primitive.ObjectID) int64 {
+	opts := options.Count().SetHint("_id_")
+	filter := bson.D{{Key: "user_followings_user", Value: userId}}
+	countUserFollowing, _ := config.DB.Collection("UserFollowings").CountDocuments(context.TODO(), filter, opts)
+	return countUserFollowing
 }
 
 // @Summary UserFollowings

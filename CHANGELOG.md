@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.7
+## Changes
+- _O1 
+-  _O1, _O1a, _O1b, _O1c - Get user detail and badges
+- 4.2e ~ 4.2h - Tab4 Friends
+
 # CHANGELOG 1.1.6
 ## Changes
 - Get OOSA users 3.3.2.1 ~ 3.3.2.1c, 3.1.1.4 ~ 3.1.1.4a
