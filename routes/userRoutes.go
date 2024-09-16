@@ -8,24 +8,27 @@ import (
 )
 
 func UserRoutes(r *gin.Engine) *gin.Engine {
-	repository := repository.UserRepository{}
+	userRepository := repository.UserRepository{}
+	userStatisticsRepository := repository.UserStatisticsRepository{}
+
 	main := r.Group("/user-following", middleware.AuthMiddleware())
 	{
-		main.GET("/", repository.UserFollowingRetrieve)
-		main.POST("/", repository.UserFollowingCreate)
+		main.GET("/", userRepository.UserFollowingRetrieve)
+		main.POST("/", userRepository.UserFollowingCreate)
 	}
 
 	detail := main.Group("/:id", middleware.AuthMiddleware())
 	{
-		detail.GET("", repository.UserFollowingRead)
-		detail.PUT("", repository.UserFollowingUpdate)
-		detail.DELETE("", repository.UserFollowingDelete)
+		detail.GET("", userRepository.UserFollowingRead)
+		detail.PUT("", userRepository.UserFollowingUpdate)
+		detail.DELETE("", userRepository.UserFollowingDelete)
 	}
 
 	me := r.Group("/user", middleware.AuthMiddleware())
 	{
-		me.GET("", repository.RetrieveUsers)
-		me.GET("/friends", repository.RetrieveUserFriends)
+		me.GET("", userRepository.RetrieveUsers)
+		me.GET("/friends", userRepository.RetrieveUserFriends)
+		me.GET("/statistics", userStatisticsRepository.Retrieve)
 	}
 
 	return r
