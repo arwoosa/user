@@ -7,11 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func StatisticsRoutes(r *gin.Engine) *gin.Engine {
+func WorldRoutes(r *gin.Engine) *gin.Engine {
 	repository := repository.StatisticsRepository{}
-	main := r.Group("/statistics", middleware.AuthMiddleware())
+	main := r.Group("/world", middleware.AuthMiddleware())
 	{
-		main.GET("", repository.Retrieve)
+		main.GET("statistics", repository.Retrieve)
 	}
 
 	return r

@@ -12,10 +12,11 @@ func RegisterRoutes() *gin.Engine {
 	r := gin.Default()
 	AuthRoutes(r)
 	UserRoutes(r)
+	OosaUserRoutes(r)
 	PaymentRoutes(r)
 	ContactUsRoutes(r)
-	StatisticsRoutes(r)
 	OosaDailyRoutes(r)
+	WorldRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r

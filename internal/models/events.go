@@ -34,3 +34,8 @@ type Events struct {
 	EventsUpdatedAt            primitive.DateTime `bson:"events_updated_at,omitempty" json:"events_updated_at"`
 	EventsCreatedByUser        *UsersAgg          `bson:"events_created_by_user,omitempty" json:"events_created_by_user,omitempty"`
 }
+
+type EventsStatisticCount struct {
+	EventsStatisticCountCode  string `bson:"_id,omitempty" json:"events_country_code"`
+	EventsStatisticCountCount int    `bson:"events_country_count,omitempty" json:"events_country_count"`
+}

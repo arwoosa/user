@@ -587,12 +587,22 @@ func (t AuthRepository) UpdateUserSettings(c *gin.Context) {
 }
 
 func (t AuthRepository) RetrieveBadges(c *gin.Context) {
-	single := c.Query("single")
 	userDetail := helpers.GetAuthUser(c)
+	var results []models.Badges
+	err := t.RetrieveBadgesByUserId(c, userDetail.UsersId, &results)
 
+	if err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
+func (t AuthRepository) RetrieveBadgesByUserId(c *gin.Context, userId primitive.ObjectID, Badges *[]models.Badges) error {
+	single := c.Query("single")
 	agg := mongo.Pipeline{
 		bson.D{{
-			Key: "$match", Value: bson.M{"user_badges_user": userDetail.UsersId},
+			Key: "$match", Value: bson.M{"user_badges_user": userId},
 		}},
 		bson.D{{
 			Key: "$lookup", Value: bson.M{
@@ -621,16 +631,10 @@ func (t AuthRepository) RetrieveBadges(c *gin.Context) {
 				Key: "$match", Value: bson.M{"UserBadgesDetail.badges_is_once": false},
 			}})
 	}
-
-	var results []models.Badges
 	cursor, err := config.DB.Collection("UserBadges").Aggregate(context.TODO(), agg)
-	cursor.All(context.TODO(), &results)
+	cursor.All(context.TODO(), Badges)
 
-	if err != nil {
-		return
-	}
-
-	c.JSON(http.StatusOK, results)
+	return err
 }
 
 func (t AuthRepository) RetrieveNotifications(c *gin.Context) {

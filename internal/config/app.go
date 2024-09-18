@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -23,7 +24,12 @@ type AppConfig struct {
 	FacebookUrl                string
 }
 
+type AppLimit struct {
+	FriendListLimit int64
+}
+
 var APP AppConfig
+var APP_LIMIT AppLimit
 
 func InitialiseConfig() {
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -45,4 +51,9 @@ func InitialiseConfig() {
 	APP.ClourdlareImageAccountHash = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_HASH")
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
 	APP.FacebookUrl = os.Getenv("OATH_FACEBOOK_BASE_URL")
+
+	friendListLimit, friendListLimitErr := strconv.ParseInt(os.Getenv("FRIEND_LIST_LIMIT"), 10, 64)
+	if friendListLimitErr == nil {
+		APP_LIMIT.FriendListLimit = friendListLimit
+	}
 }
