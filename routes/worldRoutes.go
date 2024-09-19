@@ -12,6 +12,8 @@ func WorldRoutes(r *gin.Engine) *gin.Engine {
 	main := r.Group("/world", middleware.AuthMiddleware())
 	{
 		main.GET("statistics", repository.Retrieve)
+		main.GET("ranking-feelings", repository.RetrieveRankingFeelings)
+		main.GET("ranking-rewilding", repository.RetrieveRankingRewilding)
 	}
 
 	return r

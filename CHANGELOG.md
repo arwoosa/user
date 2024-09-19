@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.9
+## Changes
+- 4.3 - Top 5 Ranking (Feelings/Rewild)
+
 # CHANGELOG 1.1.8
 ## Changes
 -  4.0 - World Statistics

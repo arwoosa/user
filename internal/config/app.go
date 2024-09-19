@@ -25,7 +25,8 @@ type AppConfig struct {
 }
 
 type AppLimit struct {
-	FriendListLimit int64
+	FriendListLimit   int64
+	MinimumTopRanking int64
 }
 
 var APP AppConfig
@@ -53,7 +54,11 @@ func InitialiseConfig() {
 	APP.FacebookUrl = os.Getenv("OATH_FACEBOOK_BASE_URL")
 
 	friendListLimit, friendListLimitErr := strconv.ParseInt(os.Getenv("FRIEND_LIST_LIMIT"), 10, 64)
+	minimumTopRanking, minimumTopRankingErr := strconv.ParseInt(os.Getenv("MINIMUM_TOP_RANKING"), 10, 64)
 	if friendListLimitErr == nil {
 		APP_LIMIT.FriendListLimit = friendListLimit
+	}
+	if minimumTopRankingErr == nil {
+		APP_LIMIT.MinimumTopRanking = minimumTopRanking
 	}
 }
