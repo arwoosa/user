@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"oosa/internal/middleware"
 	"oosa/pkg/repository"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +8,7 @@ import (
 
 func WorldRoutes(r *gin.Engine) *gin.Engine {
 	repository := repository.StatisticsRepository{}
-	main := r.Group("/world", middleware.AuthMiddleware())
+	main := r.Group("/world")
 	{
 		main.GET("statistics", repository.Retrieve)
 		main.GET("ranking-feelings", repository.RetrieveRankingFeelings)
