@@ -1,3 +1,11 @@
+# CHANGELOG 1.1.10
+## Changes
+- 4, 4.1, 4.3 - Removal of Auth Guards
+
+# CHANGELOG 1.1.9
+## Changes
+- 4.3 - Top 5 Ranking (Feelings/Rewild)
+
 # CHANGELOG 1.1.8
 ## Changes
 -  4.0 - World Statistics
