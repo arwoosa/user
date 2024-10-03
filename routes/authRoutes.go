@@ -29,10 +29,10 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 		binding.POST("/facebook", authRepo.BindFacebook)
 	}
 
-	auth := main.Group("/", middleware.AuthMiddleware())
+	auth := main.Group("", middleware.AuthMiddleware())
 	{
-		auth.GET("/", authRepo.Auth)
-		auth.PUT("/", authRepo.AuthUpdate)
+		auth.GET("", authRepo.Auth)
+		auth.PUT("", authRepo.AuthUpdate)
 		auth.PUT("/change-password", authRepo.AuthUpdatePassword)
 		auth.POST("/profile-picture", authRepo.AuthUpdateProfilePicture)
 		auth.POST("/avatar", authRepo.AuthUpdateAvatar)
