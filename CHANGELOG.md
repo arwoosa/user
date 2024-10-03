@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.11
+## Changes
+- GENERAL - user-following, auth routes remove trailing slashes 
+
 # CHANGELOG 1.1.10
 ## Changes
 - 4, 4.1, 4.3 - Removal of Auth Guards
