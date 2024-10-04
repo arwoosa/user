@@ -12,9 +12,11 @@ services:
   oosa_user:
     container_name: oosa_user
     image: oosa-user:dev
-    restart: always
-    ports:
-      - 6081:6080
+    restart: on-failure
+    labels:
+      - traefik.http.routers.user.entrypoints=web
+      - traefik.http.routers.user.rule= Host(`user.docker.localhost`)
+      - traefik.http.routers.user.middlewares=api
     environment:
       - APP_PORT=6080
       - DB_API_HOST=oosa_mongodb
