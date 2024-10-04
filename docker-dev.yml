@@ -12,7 +12,7 @@ services:
   oosa_user:
     container_name: oosa_user
     image: oosa-user:dev
-    restart: on-failure
+    restart: always
     labels:
       - traefik.http.routers.user.entrypoints=web
       - traefik.http.routers.user.rule= Host(`user.docker.localhost`)
