@@ -13,8 +13,8 @@ func UserRoutes(r *gin.Engine) *gin.Engine {
 
 	main := r.Group("/user-following", middleware.AuthMiddleware())
 	{
-		main.GET("/", userRepository.UserFollowingRetrieve)
-		main.POST("/", userRepository.UserFollowingCreate)
+		main.GET("", userRepository.UserFollowingRetrieve)
+		main.POST("", userRepository.UserFollowingCreate)
 	}
 
 	detail := main.Group("/:id", middleware.AuthMiddleware())

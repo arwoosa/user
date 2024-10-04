@@ -13,7 +13,7 @@ func PaymentRoutes(r *gin.Engine) *gin.Engine {
 		main.GET("", repository.MakeLinePayment)
 		main.POST("/confirm", repository.ConfirmLinePayment)
 
-		// main.POST("/", repository.UserFollowingCreate)
+		// main.POST("", repository.UserFollowingCreate)
 
 		// main.PUT("/:id", repository.UserFollowingUpdate)
 
