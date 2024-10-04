@@ -11,8 +11,14 @@ steps:
 - name: dev-build-docker-image
   commands:
   - docker build -t oosa-user:dev .
-  - restart_arwoosa.sh
-  when:
-    branch:
-    - dev
+- name: restart service
+  commands:
+  - docker-compose -f dev.yml down
+  - docker container prune -f
+  - docker rmi $(docker images --filter "dangling=true" -q --no-trunc)
+  - docker-compose -f dev.yml up -d
+
+trigger:
+  branch:
+  - dev
 ...

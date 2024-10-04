@@ -1,0 +1,35 @@
+networks:
+  oosa-network:
+    external: true
+    driver: bridge
+    name: oosa-network
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+name: oosa
+services:
+  oosa_user:
+    container_name: oosa_user
+    image: oosa-user:dev
+    restart: always
+    ports:
+      - 6081:6080
+    environment:
+      - APP_PORT=6080
+      - DB_API_HOST=oosa_mongodb
+      - DB_API_PORT=27017
+      - DB_API_DATABASE=oosa
+      - OAUTH_GOOGLE_CLIENT_ID=81587618939-gsnlsh1r70hkq43jr7l50f4s9dv1ka9n.apps.googleusercontent.com
+      - OAUTH_LINE_CLIENT_ID=2005318818
+      - OAUTH_LINE_CLIENT_SECRET=b545e207851fcdf962b9697c84c54f12
+      - OAUTH_LINE_REDIRECT_URL=https://api-dev.oosa.life/auth/line
+      - OATH_FACEBOOK_BASE_URL=https://graph.facebook.com/
+      - CLOUDFLARE_IMAGE_AUTH_TOKEN=LAtqwjUrfA9DH-st22XkYpR82Hnz2LwsK14M583r
+      - CLOURDLARE_IMAGE_ACCOUNT_ID=69e9668bb0036342460ed07037a7ae24
+      - CLOURDLARE_IMAGE_ACCOUNT_HASH=peXbMh4A5r2xX67SaM4zPQ
+      - CLOURDLARE_IMAGE_DELIVERY_URL=https://oosa.life/cdn-cgi/imagedelivery
+      - FRIEND_LIST_LIMIT=5000
+      - MINIMUM_TOP_RANKING=2
+    networks:
+    - oosa-network
