@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"oosa/internal/config"
 	"oosa/internal/helpers"
@@ -109,11 +108,12 @@ func (uf UserRepository) UserFollowingCreate(c *gin.Context) {
 		}
 		helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST, payload.UserFollowingsFollowing, NotificationMessage, requestId)
 		c.JSON(http.StatusOK, gin.H{"message": "User following created successfully", "inserted_id": result.InsertedID})
-		return
+
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "Already followed"})
 	}
-
+	uf.CountFollowingFollowers(userDetail.UsersId)
+	uf.CountFollowingFollowers(FollowingUser.UsersId)
 }
 
 func (uf UserRepository) CountUserFollowing(c *gin.Context, userId primitive.ObjectID) int64 {
@@ -174,12 +174,14 @@ func (uf UserRepository) UserFollowingUpdate(c *gin.Context) {
 
 	userFollowings.UserFollowingsFollowing = payload.UserFollowingsFollowing
 
-	result, err := config.DB.Collection("UserFollowings").ReplaceOne(context.TODO(), bson.D{{Key: "_id", Value: userFollowings.UserFollowingsId}}, userFollowings)
-	if err != nil {
+	_, errUpd := config.DB.Collection("UserFollowings").ReplaceOne(context.TODO(), bson.D{{Key: "_id", Value: userFollowings.UserFollowingsId}}, userFollowings)
+	if errUpd != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println(result)
+
+	uf.CountFollowingFollowers(userFollowings.UserFollowingsUser)
+	uf.CountFollowingFollowers(userFollowings.UserFollowingsFollowing)
 	c.JSON(http.StatusOK, gin.H{"message": "User following updated successfully"})
 }
 
@@ -208,6 +210,8 @@ func (uf UserRepository) UserFollowingDelete(c *gin.Context) {
 		return
 	}
 
+	uf.CountFollowingFollowers(UserFollowings.UserFollowingsUser)
+	uf.CountFollowingFollowers(UserFollowings.UserFollowingsFollowing)
 	c.JSON(http.StatusOK, gin.H{"message": "User following deleted successfully"})
 }
 
@@ -303,4 +307,15 @@ func (uf UserRepository) ReadOne(c *gin.Context, UserFollowings *models.UserFoll
 
 	err := config.DB.Collection("UserFollowings").FindOne(context.TODO(), filter).Decode(&UserFollowings)
 	return err
+}
+
+func (uf UserRepository) CountFollowingFollowers(userId primitive.ObjectID) {
+	following, _ := config.DB.Collection("UserFollowings").CountDocuments(context.TODO(), bson.D{{Key: "user_followings_user", Value: userId}})
+	follower, _ := config.DB.Collection("UserFollowings").CountDocuments(context.TODO(), bson.D{{Key: "user_followings_following", Value: userId}})
+
+	update := bson.D{{Key: "$set", Value: bson.M{
+		"users_following_count": int(following),
+		"users_follower_count":  int(follower),
+	}}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: userId}}, update)
 }

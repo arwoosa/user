@@ -24,12 +24,16 @@ type Users struct {
 	UsersEventCompleted                   int                `bson:"users_event_completed,omitempty" json:"-"`
 	UsersEventScheduled                   int                `bson:"users_event_scheduled,omitempty" json:"-"`
 	UsersBreathingPoints                  int                `bson:"users_breathing_points,omitempty" json:"users_breathing_points"`
+	UsersFollowingCount                   int                `bson:"users_following_count,omitempty" json:"users_following_count"`
+	UsersFollowerCount                    int                `bson:"users_follower_count,omitempty" json:"users_follower_count"`
 	UsersFollowings                       *UserFollowings    `bson:"users_followings,omitempty" json:"users_followings"`
 }
 
 type UsersAgg struct {
-	UsersId     primitive.ObjectID `bson:"_id,omitempty" json:"user_id"`
-	UsersName   string             `bson:"users_name,omitempty" json:"user_name"`
-	UsersEmail  string             `bson:"users_email,omitempty" json:"user_email"`
-	UsersAvatar string             `bson:"users_avatar,omitempty" json:"user_avatar"`
+	UsersId             primitive.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	UsersName           string             `bson:"users_name,omitempty" json:"user_name"`
+	UsersEmail          string             `bson:"users_email,omitempty" json:"user_email"`
+	UsersAvatar         string             `bson:"users_avatar,omitempty" json:"user_avatar"`
+	UsersFollowingCount int                `bson:"users_following_count,omitempty" json:"users_following_count"`
+	UsersFollowerCount  int                `bson:"users_follower_count,omitempty" json:"users_follower_count"`
 }
