@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.12
+## Changes
+- GET user?name= Show 
+- user-following routes to trigger count on delete, create and update
+
 # CHANGELOG 1.1.11
 ## Changes
 - GENERAL - user-following, auth routes remove trailing slashes 
