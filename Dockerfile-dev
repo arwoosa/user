@@ -1,0 +1,14 @@
+# Start by building the application.
+FROM golang:1.21
+
+RUN mkdir /app
+WORKDIR /app
+
+# Get CompileDaemon
+RUN go install github.com/githubnemo/CompileDaemon@latest
+
+# The build flag sets how to build after a change has been detected in the source code
+# The command flag sets how to run the app after it has been built
+EXPOSE 80
+
+ENTRYPOINT CompileDaemon --build="go build -o bin/app ./main.go" --command="./bin/app"

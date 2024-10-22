@@ -19,7 +19,7 @@ FROM gcr.io/distroless/static-debian11
 COPY --from=base /main .
 
 # Expose port 80 to the outside world
-EXPOSE 6080
+EXPOSE 80
 
 # Command to run the executable
 # ENTRYPOINT CompileDaemon -build="go build main.go" -command="./main"
