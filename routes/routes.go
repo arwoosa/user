@@ -26,11 +26,12 @@ func RegisterRoutes() *gin.Engine {
 	if redisSessionDB == "" {
 		panic("REDIS_SESSION_DB not set")
 	}
+
 	store, err := redis.NewStoreWithDB(10, "tcp", redisHost, "", redisSessionDB, []byte(redisSecret))
-	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
 	if err != nil {
 		panic(err)
 	}
+	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
 
 	r.Use(sessions.Sessions("oosa_user_session", store))
 	AuthRoutes(r)
