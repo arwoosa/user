@@ -11,4 +11,4 @@ RUN go install github.com/githubnemo/CompileDaemon@latest
 # The command flag sets how to run the app after it has been built
 EXPOSE 80
 
-ENTRYPOINT CompileDaemon --build="go build -o bin/app ./main.go" --command="./bin/app"
+ENTRYPOINT CompileDaemon --build="go build -o bin/app ./main.go" --command="./bin/app -dev"

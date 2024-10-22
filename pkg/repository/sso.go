@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -28,27 +29,30 @@ func init() {
 }
 
 func (t SsoRepository) Register(c *gin.Context) {
-	mysession := sessions.Default(c)
-
-	stateObj := mysession.Get("state")
-	if stateObj != nil && stateObj.(string) == c.Query("state") {
-		t.callbackAndSaveUser(c)
-		return
-	}
-
 	registerUrl := *c.Request.URL
-	registerUrl.Scheme = "https"
-	registerUrl.Host = c.Request.Host
+	registerUrl.Scheme, registerUrl.Host = getSchemeAndHost(c)
 	state := uuid.NewString()
+	mysession := sessions.Default(c)
 	mysession.Set("state", state)
-	registerUrl.Path = registerUrl.Path + "/finish"
+	registerUrl.Path = fmt.Sprintf("/api%s/finish", registerUrl.Path)
 	registerUrl.RawQuery = fmt.Sprintf("state=%s", state)
 
 	ssoRegisterUrl.RawQuery = fmt.Sprintf("return_to=%s", url.QueryEscape(registerUrl.String()))
 	mysession.Set("return_to", c.Query("return_to"))
 	mysession.Save()
-
 	c.Redirect(http.StatusSeeOther, ssoRegisterUrl.String())
+}
+
+func getSchemeAndHost(c *gin.Context) (string, string) {
+	host := c.Request.Host
+	if forwardHost := c.GetHeader("X-Forwarded-Host"); forwardHost != "" {
+		host = forwardHost
+	}
+	scheme := "https"
+	if strings.Contains(host, "localhost") {
+		scheme = "http"
+	}
+	return scheme, host
 }
 
 type UserBindByHeader struct {
@@ -59,17 +63,24 @@ type UserBindByHeader struct {
 	Language string `header:"X-Language"`
 }
 
-func (t SsoRepository) callbackAndSaveUser(c *gin.Context) {
+func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
+	mysession := sessions.Default(c)
+	stateObj := mysession.Get("state")
+	if stateObj != nil && stateObj.(string) != c.Query("state") {
+		t.Register(c)
+		return
+	}
 	var user UserBindByHeader
 	err := c.BindHeader(&user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	mysession := sessions.Default(c)
+
 	return_to := mysession.Get("return_to")
 	mysession.Clear()
 	if return_to != nil {
+		fmt.Println(return_to)
 		c.Redirect(http.StatusSeeOther, return_to.(string))
 		return
 	}

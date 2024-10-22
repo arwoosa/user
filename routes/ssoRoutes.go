@@ -9,10 +9,11 @@ import (
 func SsoRoutes(r *gin.Engine) *gin.Engine {
 	ssoRepo := repository.SsoRepository{}
 
-	register := r.Group("/sso")
+	register := r.Group("/sso/register")
 	{
-		register.GET("/register", ssoRepo.Register)
-		register.POST("/register/finish", ssoRepo.Register)
+		register.GET("", ssoRepo.Register)
+		register.POST("/finish", ssoRepo.CallbackAndSaveUser)
+
 	}
 
 	return r

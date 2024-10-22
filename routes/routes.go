@@ -12,7 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
 )
 
-func RegisterRoutes() *gin.Engine {
+func RegisterRoutes(dev bool) *gin.Engine {
 	r := gin.Default()
 	redisHost := os.Getenv("REDIS_HOST")
 	if redisHost == "" {
@@ -31,7 +31,11 @@ func RegisterRoutes() *gin.Engine {
 	if err != nil {
 		panic(err)
 	}
-	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
+	if dev {
+		store.Options(sessions.Options{MaxAge: 86400, SameSite: http.SameSiteLaxMode})
+	} else {
+		store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
+	}
 
 	r.Use(sessions.Sessions("oosa_user_session", store))
 	AuthRoutes(r)
