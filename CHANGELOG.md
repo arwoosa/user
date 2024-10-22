@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.13
+## Changes
+- world/ranking-feelings - default to EXPERIENCE_1, allow only EXPERIENCE_1 to EXPERIENCE_6
+
 # CHANGELOG 1.1.12
 ## Changes
 - GET user?name= Show 
