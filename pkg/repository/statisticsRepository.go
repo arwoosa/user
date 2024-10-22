@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"oosa/internal/config"
 	"oosa/internal/helpers"
@@ -99,7 +100,13 @@ func (t StatisticsRepository) Retrieve(c *gin.Context) {
 
 func (t StatisticsRepository) RetrieveRankingFeelings(c *gin.Context) {
 	var RewildingRankingFeelings []models.RewildingRanking
-	eventParticipantsAgg := t.GetRankingPipeline(c, 1)
+	eventParticipantsAgg, eventParticipantsAggErr := t.GetRankingPipeline(c, 1)
+
+	if eventParticipantsAggErr != nil {
+		helpers.ResponseBadRequestError(c, eventParticipantsAggErr.Error())
+		return
+	}
+
 	eventParticipantsCursor, eventParticipantsErr := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), eventParticipantsAgg)
 	eventParticipantsCursor.All(context.TODO(), &RewildingRankingFeelings)
 
@@ -117,7 +124,13 @@ func (t StatisticsRepository) RetrieveRankingFeelings(c *gin.Context) {
 
 func (t StatisticsRepository) RetrieveRankingRewilding(c *gin.Context) {
 	var RewildingRankingFeelings []models.RewildingRanking
-	eventParticipantsAgg := t.GetRankingPipeline(c, 2)
+	eventParticipantsAgg, eventParticipantsAggErr := t.GetRankingPipeline(c, 2)
+
+	if eventParticipantsAggErr != nil {
+		helpers.ResponseBadRequestError(c, eventParticipantsAggErr.Error())
+		return
+	}
+
 	eventParticipantsCursor, eventParticipantsErr := config.DB.Collection("EventParticipants").Aggregate(context.TODO(), eventParticipantsAgg)
 	eventParticipantsCursor.All(context.TODO(), &RewildingRankingFeelings)
 
@@ -133,9 +146,21 @@ func (t StatisticsRepository) RetrieveRankingRewilding(c *gin.Context) {
 	c.JSON(200, RewildingRankingFeelings)
 }
 
-func (t StatisticsRepository) GetRankingPipeline(c *gin.Context, groupType int) mongo.Pipeline {
+func (t StatisticsRepository) GetRankingPipeline(c *gin.Context, groupType int) (mongo.Pipeline, error) {
 	// 1: Ranking based on feelings, 2: Ranking based on participant count
 	rankingFeelings := c.Query("feelings")
+
+	allowedFeelings := []string{"EXPERIENCE_1", "EXPERIENCE_2", "EXPERIENCE_3", "EXPERIENCE_4", "EXPERIENCE_5", "EXPERIENCE_6"}
+	if groupType == 1 {
+		if rankingFeelings == "" {
+			rankingFeelings = "EXPERIENCE_1"
+		} else if rankingFeelings != "" {
+			if !helpers.StringInSlice(rankingFeelings, allowedFeelings) {
+				return nil, errors.New("unsupported feelings")
+			}
+		}
+	}
+
 	pipeline := mongo.Pipeline{
 		bson.D{{
 			Key: "$match", Value: bson.M{
@@ -211,5 +236,5 @@ func (t StatisticsRepository) GetRankingPipeline(c *gin.Context, groupType int) 
 		_, pipeline = pipeline[0], pipeline[1:]
 	}
 
-	return pipeline
+	return pipeline, nil
 }
