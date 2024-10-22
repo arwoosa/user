@@ -22,7 +22,11 @@ func RegisterRoutes() *gin.Engine {
 	if redisSecret == "" {
 		panic("REDIS_SECRET not set")
 	}
-	store, err := redis.NewStore(10, "tcp", redisHost, "", []byte(redisSecret))
+	redisSessionDB := os.Getenv("REDIS_SESSION_DB")
+	if redisSessionDB == "" {
+		panic("REDIS_SESSION_DB not set")
+	}
+	store, err := redis.NewStoreWithDB(10, "tcp", redisHost, "", redisSessionDB, []byte(redisSecret))
 	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
 	if err != nil {
 		panic(err)
