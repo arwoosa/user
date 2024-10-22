@@ -1,0 +1,17 @@
+services: 
+  dev-oosa_user:
+    build:
+      context: ../
+      dockerfile: Dockerfile-dev
+    labels:
+      - traefik.http.routers.dev-user.entrypoints=web
+      - traefik.http.routers.dev-user.rule= Host(`dev-user.docker.localhost`) || Host(`dev-user.oosa.life`)
+      - traefik.http.services.dev-user.loadbalancer.server.port=80
+      - traefik.http.routers.dev-user.service=dev-user
+      - traefik.http.routers.dev-user.middlewares=oathkeeper
+    env_file:
+      - ./.env.${ENV}
+    volumes:
+      - ../:/app
+    networks:
+      - ${NETWORK_NAME}
