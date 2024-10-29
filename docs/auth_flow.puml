@@ -1,0 +1,18 @@
+@startuml
+participant Participant as Foo
+actor       Browser
+entity      Proxy
+collections Oath 
+
+collections Rewild
+collections Identity
+
+Browser -> Proxy: GET /event
+Proxy -> Oath: Check request is allow to pass
+Oath -> Identity: Who am i request
+Identity -> Oath: response user info
+Oath -> Proxy: success
+Proxy -> Rewild: User info in header & request data
+Rewild -> Browser: response data
+' user info header: X-User, X-Userid, X-Email, X-Name, X-Language
+@enduml
