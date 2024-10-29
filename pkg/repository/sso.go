@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"oosa/internal/models"
 	"os"
 	"strings"
 
@@ -33,9 +34,9 @@ func init() {
 }
 
 // TODO: add user db
-func saveUserInfo(user *UserBindByHeader) error {
+func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
 	fmt.Println(user)
-	return nil
+	return nil, nil
 }
 
 func (t SsoRepository) Register(c *gin.Context) {
@@ -92,7 +93,7 @@ func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
 		return
 	}
 
-	err = saveUserInfo(&user)
+	myUser, err := saveUserInfo(&user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -106,6 +107,9 @@ func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
 		return
 	}
 	mysession.Save()
+
+	_ = myUser
+	// TODO: response user info
 }
 
 func (SsoRepository) ResponseHeader(c *gin.Context) {
@@ -322,13 +326,18 @@ func (SsoRepository) ProviderCallback(c *gin.Context) {
 	} else if resp.StatusCode == http.StatusOK {
 		var successResp ocidRegisterSuccessResp
 		json.NewDecoder(resp.Body).Decode(&successResp)
-		saveUserInfo(&UserBindByHeader{
+		myuser, err := saveUserInfo(&UserBindByHeader{
 			Id:       successResp.Session.Identity.Id,
 			Email:    successResp.Session.Identity.Traits.Email,
 			Name:     successResp.Session.Identity.Traits.Name,
 			User:     successResp.Session.Identity.Traits.Username,
 			Language: successResp.Session.Identity.Traits.Language,
 		})
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		_ = myuser
 		c.JSON(http.StatusOK, gin.H{"token": successResp.Token})
 	}
 
