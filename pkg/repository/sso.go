@@ -32,7 +32,7 @@ func init() {
 	}
 }
 
-// TODO: add login
+// TODO: add user db
 func saveUserInfo(user *UserBindByHeader) error {
 	fmt.Println(user)
 	return nil
