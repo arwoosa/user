@@ -1,0 +1,29 @@
+@startuml
+participant Participant as Foo
+actor       Browser
+
+
+collections User 
+
+
+collections Identity
+
+database    Mongo
+database    SQL
+
+Browser -> User: GET /sso/register?return_to=A
+User -> User: Set-Cookie
+User -> Browser: 303 redirect url to Identiy
+Browser -> Identity: GET /self-service/registration/browser?return_to=/sso/register/finish
+Identity -> Identity: Set-Cookie(csrf_token)
+Identity -> Browser: register page
+Browser -> Identity: POST /self-service/registration
+Identity -> SQL: Save user info
+Identity -> Identity: Set-Cookie (oosa-session)
+Identity -> Browser: Session Info & redirct url (/sso/register/finish)
+Browser -> User: POST /sso/register/finish (get user info from header)
+User -> Mongo: Save user info
+User -> User: Get return_to from session
+User -> Browser: 303 redirect url to A
+
+@enduml

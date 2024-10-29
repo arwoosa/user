@@ -3,6 +3,10 @@ services:
     build:
       context: ../
       dockerfile: Dockerfile-dev
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.dev-user.rule=Host(`user.docker.localhost`)
+    - traefik.http.routers.dev-user.entrypoints=web
     env_file:
       - ./.env.${ENV}
     volumes:
