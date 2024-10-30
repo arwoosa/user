@@ -1,3 +1,12 @@
+# CHANGELOG 1.1.13
+## Changes
+- world/ranking-feelings - default to EXPERIENCE_1, allow only EXPERIENCE_1 to EXPERIENCE_6
+
+# CHANGELOG 1.1.12
+## Changes
+- GET user?name= Show 
+- user-following routes to trigger count on delete, create and update
+
 # CHANGELOG 1.1.11
 ## Changes
 - GENERAL - user-following, auth routes remove trailing slashes 

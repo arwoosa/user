@@ -2,19 +2,24 @@ package repository
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"oosa/internal/config"
 	"oosa/internal/models"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SsoRepository struct{}
@@ -35,8 +40,27 @@ func init() {
 
 // TODO: add user db
 func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
+	var User models.Users
+	insert := models.Users{
+		UsersSource:                           3,
+		UsersSourceId:                         user.Id,
+		UsersName:                             user.Name,
+		UsersEmail:                            user.Email,
+		UsersObject:                           user.User,
+		UsersAvatar:                           "",
+		UsersSettingLanguage:                  user.Language,
+		UsersSettingIsVisibleFriends:          1,
+		UsersSettingIsVisibleStatistics:       1,
+		UsersSettingVisibilityActivitySummary: 1,
+		UsersSettingFriendAutoAdd:             1,
+		UsersIsSubscribed:                     false,
+		UsersIsBusiness:                       false,
+		UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
+	}
+	result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
+	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
 	fmt.Println(user)
-	return nil, nil
+	return &User, nil
 }
 
 func (t SsoRepository) Register(c *gin.Context) {
