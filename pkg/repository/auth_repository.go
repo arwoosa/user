@@ -109,7 +109,7 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 // @Router /auth [get]
 func (t AuthRepository) Auth(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
-	userDetail.UsersBreathingPoints = t.Breathing(c)
+	userDetail.UsersBreathingPoints = t.Breathing(c, userDetail.UsersId)
 	c.JSON(http.StatusOK, userDetail)
 }
 
@@ -644,7 +644,12 @@ func (t AuthRepository) RetrieveNotifications(c *gin.Context) {
 	filter := bson.D{
 		{Key: "notifications_user", Value: userDetail.UsersId},
 	}
-	cursor, _ := config.DB.Collection("Notifications").Find(context.TODO(), filter)
+	cursor, err := config.DB.Collection("Notifications").Find(context.TODO(), filter)
+
+	if err != nil {
+		helpers.ResponseBadRequestError(c, err.Error())
+		return
+	}
 	cursor.All(context.TODO(), &results)
 
 	c.JSON(200, results)
@@ -684,14 +689,13 @@ func GetEventParticipantStatus(status string) int64 {
 	return ParticipantStatus[status]
 }
 
-func (t AuthRepository) Breathing(c *gin.Context) int {
-	userDetail := helpers.GetAuthUser(c)
+func (t AuthRepository) Breathing(c *gin.Context, userId primitive.ObjectID) int {
 	var results []models.Events
 
 	agg := mongo.Pipeline{
 		bson.D{{
 			Key: "$match", Value: bson.M{
-				"event_participants_user":   userDetail.UsersId,
+				"event_participants_user":   userId,
 				"event_participants_status": GetEventParticipantStatus("ACCEPTED"),
 			},
 		}},
@@ -742,7 +746,7 @@ func (t AuthRepository) Breathing(c *gin.Context) int {
 	expAgg := mongo.Pipeline{
 		bson.D{{
 			Key: "$match", Value: bson.M{
-				"exp_user": userDetail.UsersId,
+				"exp_user": userId,
 			},
 		}},
 		bson.D{{
