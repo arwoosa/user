@@ -20,8 +20,9 @@ type UserFriendRequest struct {
 	UserId primitive.ObjectID `json:"user_id" binding:"required"`
 }
 
+//0: recommended, 1: pending, 2: accepted, 3: cancel
+
 func (uf UserFriendRepository) Retrieve(c *gin.Context) {
-	userName := c.Query("name")
 	userType := c.Param("type")
 	//userFriendsType, userFriendsTypeExists := c.Get("userfriends_type")
 	userDetail := helpers.GetAuthUser(c)
@@ -33,12 +34,42 @@ func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 		userFriendStatus, _ = strconv.Atoi(userType)
 	}
 
+	userId := userDetail.UsersId
+	uf.GetUser(c, userFriendStatus, userId, &UserFriends)
+
+	if len(UserFriends) > 0 {
+		for k := range UserFriends {
+			uf.GetDetail(c, userDetail.UsersId, &UserFriends[k])
+		}
+		c.JSON(200, UserFriends)
+	} else {
+		helpers.ResponseNoData(c, "No data")
+	}
+}
+
+func (uf UserFriendRepository) RetrieveOther(c *gin.Context) {
+	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
+	var UserFriends []models.UserFriends
+	uf.GetUser(c, 2, id, &UserFriends)
+
+	if len(UserFriends) > 0 {
+		for k := range UserFriends {
+			uf.GetDetail(c, id, &UserFriends[k])
+		}
+		c.JSON(200, UserFriends)
+	} else {
+		helpers.ResponseNoData(c, "No data")
+	}
+}
+
+func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, userId primitive.ObjectID, UserFriends *[]models.UserFriends) {
+	userName := c.Query("name")
 	match := bson.D{
 		{Key: "user_friends_status", Value: userFriendStatus},
 		{
 			Key: "$or", Value: []bson.D{
-				{{Key: "user_friends_user_1", Value: userDetail.UsersId}},
-				{{Key: "user_friends_user_2", Value: userDetail.UsersId}},
+				{{Key: "user_friends_user_1", Value: userId}},
+				{{Key: "user_friends_user_2", Value: userId}},
 			},
 		},
 	}
@@ -83,11 +114,11 @@ func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 				Key: "$match", Value: bson.D{
 					{Key: "$or", Value: []bson.M{
 						{
-							"User1._id":        bson.M{"$ne": userDetail.UsersId},
+							"User1._id":        bson.M{"$ne": userId},
 							"User1.users_name": bson.M{"$regex": userName, "$options": "i"},
 						},
 						{
-							"User2._id":        bson.M{"$ne": userDetail.UsersId},
+							"User2._id":        bson.M{"$ne": userId},
 							"User2.users_name": bson.M{"$regex": userName, "$options": "i"},
 						},
 					}},
@@ -98,16 +129,7 @@ func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 	}
 
 	cursor, _ := config.DB.Collection("UserFriends").Aggregate(context.TODO(), pipeline)
-	cursor.All(context.TODO(), &UserFriends)
-
-	if len(UserFriends) > 0 {
-		for k := range UserFriends {
-			uf.GetDetail(c, userDetail, &UserFriends[k])
-		}
-		c.JSON(200, UserFriends)
-	} else {
-		helpers.ResponseNoData(c, "No data")
-	}
+	cursor.All(context.TODO(), UserFriends)
 }
 
 func (uf UserFriendRepository) Create(c *gin.Context) {
@@ -143,7 +165,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		var NewUserFriends models.UserFriends
 		result, _ := config.DB.Collection("UserFriends").InsertOne(context.TODO(), ins)
 		config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&NewUserFriends)
-		uf.GetDetail(c, userDetail, &NewUserFriends)
+		uf.GetDetail(c, userDetail.UsersId, &NewUserFriends)
 		c.JSON(200, NewUserFriends)
 	} else {
 		if UserFriends.UserFriendsUser2 == userDetail.UsersId {
@@ -177,16 +199,14 @@ func (uf UserFriendRepository) CheckIfFriend(c *gin.Context, userDetail models.U
 		},
 	}}).Decode(&UserFriends)
 
-	uf.GetDetail(c, userDetail, UserFriends)
+	uf.GetDetail(c, userDetail.UsersId, UserFriends)
 
 	return err
 }
 
-//0: recommended, 1: pending, 2: accepted, 3: cancel
-
-func (uf UserFriendRepository) GetDetail(c *gin.Context, userDetail models.Users, UserFriends *models.UserFriends) {
+func (uf UserFriendRepository) GetDetail(c *gin.Context, id primitive.ObjectID, UserFriends *models.UserFriends) {
 	var friendId primitive.ObjectID
-	if UserFriends.UserFriendsUser1 == userDetail.UsersId {
+	if UserFriends.UserFriendsUser1 == id {
 		friendId = UserFriends.UserFriendsUser2
 	} else {
 		friendId = UserFriends.UserFriendsUser1
@@ -230,14 +250,31 @@ func (uf UserFriendRepository) Delete(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 
 	var UserFriends models.UserFriends
-	err := config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{
+	filterCheck := bson.D{
 		{Key: "_id", Value: id},
-		{Key: "user_friends_user_1", Value: userDetail.UsersId},
-		{Key: "user_friends_status", Value: 1},
-	}).Decode(&UserFriends)
+		{
+			Key: "$or", Value: []bson.D{
+				{{Key: "user_friends_user_1", Value: userDetail.UsersId}},
+				{{Key: "user_friends_user_2", Value: userDetail.UsersId}},
+			},
+		},
+		{
+			Key: "$or", Value: []bson.D{
+				{{Key: "user_friends_status", Value: bson.D{{Key: "$ne", Value: 0}}}},
+				{{Key: "user_friends_status", Value: bson.D{{Key: "$ne", Value: 3}}}},
+			},
+		},
+	}
+	err := config.DB.Collection("UserFriends").FindOne(context.TODO(), filterCheck).Decode(&UserFriends)
 
 	if err == mongo.ErrNoDocuments {
 		helpers.ResponseBadRequestError(c, "no request to reject")
+		return
+	}
+
+	if UserFriends.UserFriendsUser1 != userDetail.UsersId && UserFriends.UserFriendsStatus == 1 {
+		//
+		helpers.ResponseBadRequestError(c, "Unable to reject. You are the friend requester")
 		return
 	}
 
