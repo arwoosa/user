@@ -215,64 +215,6 @@ func (uf UserRepository) UserFollowingDelete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User following deleted successfully"})
 }
 
-// @Summary UserFollowings
-// @Description Retrieve all user friends
-// @ID userfollowings
-// @Produce json
-// @Tags UserFollowings
-// @Success 200 {object} []models.UserFollowings
-// @Failure 400 {object} structs.Message
-// @Router /userfollowings [get]
-func (uf UserRepository) RetrieveUserFriends(c *gin.Context) {
-	userName := c.Query("name")
-	userDetail := helpers.GetAuthUser(c)
-
-	// Define pipeline for aggregation
-	pipeline := []bson.M{
-		{"$match": bson.M{"user_followings_user": userDetail.UsersId}},
-		{"$lookup": bson.M{
-			"from":         "Users",
-			"localField":   "user_followings_following",
-			"foreignField": "_id",
-			"as":           "user",
-		}},
-		{"$unwind": "$user"},
-		{"$project": bson.M{
-			"users_id":     "$user._id",
-			"users_name":   "$user.users_name",
-			"users_avatar": "$user.users_avatar",
-			"_id":          0,
-		}},
-	}
-
-	if userName != "" {
-		match := bson.M{"$match": bson.M{
-			"users_name": bson.M{"$regex": userName, "$options": "i"},
-		}}
-		pipeline = append(pipeline, match)
-	}
-
-	cursor, err := config.DB.Collection("UserFollowings").Aggregate(context.TODO(), pipeline)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user friends"})
-		return
-	}
-	defer cursor.Close(context.TODO())
-
-	var results []bson.M
-	if err := cursor.All(context.TODO(), &results); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process user friends data"})
-		return
-	}
-
-	if len(results) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No friends found for the user"})
-		return
-	}
-
-	c.JSON(http.StatusOK, results)
-}
-
 func (uf UserRepository) RetrieveUsers(c *gin.Context) {
 	userName := c.Query("name")
 	//userDetail := helpers.GetAuthUser(c)
