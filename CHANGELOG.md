@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.14
+## Changes
+-  GET friends, POST friends, PUT friends/:userFriendId, DELETE friends/:userFriendId, /user/friends/recommended- Changes to friend
+
 # CHANGELOG 1.1.13
 ## Changes
 - world/ranking-feelings - default to EXPERIENCE_1, allow only EXPERIENCE_1 to EXPERIENCE_6

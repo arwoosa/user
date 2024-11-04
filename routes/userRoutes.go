@@ -9,6 +9,7 @@ import (
 
 func UserRoutes(r *gin.Engine) *gin.Engine {
 	userRepository := repository.UserRepository{}
+	userFriendRepository := repository.UserFriendRepository{}
 	userStatisticsRepository := repository.UserStatisticsRepository{}
 
 	main := r.Group("/user-following", middleware.AuthMiddleware())
@@ -27,8 +28,18 @@ func UserRoutes(r *gin.Engine) *gin.Engine {
 	me := r.Group("/user", middleware.AuthMiddleware())
 	{
 		me.GET("", userRepository.RetrieveUsers)
-		me.GET("/friends", userRepository.RetrieveUserFriends)
 		me.GET("/statistics", userStatisticsRepository.Retrieve)
+	}
+
+	friends := me.Group("/friends", middleware.AuthMiddleware())
+	{
+		friends.GET("", userFriendRepository.Retrieve)
+		friends.POST("", userFriendRepository.Create)
+		friends.PUT(":userFriendId", userFriendRepository.Update)
+		friends.DELETE(":userFriendId", userFriendRepository.Delete)
+		friends.GET("recommended", userFriendRepository.Recommended)
+		//friends.GET("/friends", userRepository.RetrieveUserFriends)
+		//friends.GET("/statistics", userStatisticsRepository.Retrieve)
 	}
 
 	return r

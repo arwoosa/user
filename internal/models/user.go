@@ -37,3 +37,11 @@ type UsersAgg struct {
 	UsersFollowingCount int                `bson:"users_following_count,omitempty" json:"users_following_count"`
 	UsersFollowerCount  int                `bson:"users_follower_count,omitempty" json:"users_follower_count"`
 }
+
+type UsersAggBreathing struct {
+	UsersId             primitive.ObjectID `bson:"_id,omitempty" json:"user_id"`
+	UsersName           string             `bson:"users_name,omitempty" json:"user_name"`
+	UsersUsername       string             `bson:"users_username,omitempty" json:"user_username"`
+	UsersAvatar         string             `bson:"users_avatar,omitempty" json:"user_avatar"`
+	UserBreathingStatus int                `bson:"users_breathing_status,omitempty" json:"user_breathing_status"`
+}
