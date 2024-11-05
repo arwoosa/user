@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.15
+## Changes
+- GET users, GET users/statistics. Renamed 2 endpoints
+- GET user/{userId}/friends. Retrieve other user friends
+
 # CHANGELOG 1.1.14
 ## Changes
 -  GET friends, POST friends, PUT friends/:userFriendId, DELETE friends/:userFriendId, /user/friends/recommended- Changes to friend
