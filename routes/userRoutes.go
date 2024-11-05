@@ -23,15 +23,16 @@ func UserRoutes(r *gin.Engine) *gin.Engine {
 		detail.GET("", userRepository.UserFollowingRead)
 		detail.PUT("", userRepository.UserFollowingUpdate)
 		detail.DELETE("", userRepository.UserFollowingDelete)
+
 	}
 
-	me := r.Group("/user", middleware.AuthMiddleware())
+	users := r.Group("/users", middleware.AuthMiddleware())
 	{
-		me.GET("", userRepository.RetrieveUsers)
-		me.GET("/statistics", userStatisticsRepository.Retrieve)
+		users.GET("", userRepository.RetrieveUsers)
+		users.GET("/statistics", userStatisticsRepository.Retrieve)
 	}
 
-	friends := me.Group("/friends", middleware.AuthMiddleware())
+	friends := r.Group("user/friends", middleware.AuthMiddleware())
 	{
 		friends.GET("", userFriendRepository.Retrieve)
 		friends.POST("", userFriendRepository.Create)
