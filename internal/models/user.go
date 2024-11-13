@@ -26,6 +26,7 @@ type Users struct {
 	UsersBreathingPoints                  int                `bson:"users_breathing_points,omitempty" json:"users_breathing_points"`
 	UsersFollowingCount                   int                `bson:"users_following_count,omitempty" json:"users_following_count"`
 	UsersFollowerCount                    int                `bson:"users_follower_count,omitempty" json:"users_follower_count"`
+	UsersFriendsCount                     int                `bson:"users_friends_count,omitempty" json:"users_friends_count"`
 	UsersFollowings                       *UserFollowings    `bson:"users_followings,omitempty" json:"users_followings"`
 }
 

@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.16
+## Changes
+- User friends recommended (officially recommended friends, people who went together in an event)
+- Auto accept friend request based on user setting
+
 # CHANGELOG 1.1.15
 ## Changes
 - GET users, GET users/statistics. Renamed 2 endpoints

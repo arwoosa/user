@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
@@ -20,7 +21,12 @@ type UserFriendRequest struct {
 	UserId primitive.ObjectID `json:"user_id" binding:"required"`
 }
 
-//0: recommended, 1: pending, 2: accepted, 3: cancel
+var (
+	USER_RECOMMENDED = 0
+	USER_PENDING     = 1
+	USER_ACCEPTED    = 2
+	USER_CANCELLED   = 3
+)
 
 func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 	userType := c.Param("type")
@@ -29,7 +35,7 @@ func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 	var UserFriends []models.UserFriends
 
 	// Define pipeline for aggregation
-	userFriendStatus := 2
+	userFriendStatus := USER_ACCEPTED
 	if userType != "" {
 		userFriendStatus, _ = strconv.Atoi(userType)
 	}
@@ -50,7 +56,7 @@ func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 func (uf UserFriendRepository) RetrieveOther(c *gin.Context) {
 	id, _ := primitive.ObjectIDFromHex(c.Param("id"))
 	var UserFriends []models.UserFriends
-	uf.GetUser(c, 2, id, &UserFriends)
+	uf.GetUser(c, USER_ACCEPTED, id, &UserFriends)
 
 	if len(UserFriends) > 0 {
 		for k := range UserFriends {
@@ -128,6 +134,13 @@ func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, use
 		pipeline = append(pipeline, lookupUser1, lookupUser2, unwindLooupUser1, unwindLooupUser2, matchUsername)
 	}
 
+	if userFriendStatus == 0 {
+		sortBy := bson.D{{
+			Key: "$sort", Value: bson.M{"user_friends_is_official": -1, "user_friends_created_at": 1},
+		}}
+		pipeline = append(pipeline, sortBy)
+	}
+
 	cursor, _ := config.DB.Collection("UserFriends").Aggregate(context.TODO(), pipeline)
 	cursor.All(context.TODO(), UserFriends)
 }
@@ -135,6 +148,7 @@ func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, use
 func (uf UserFriendRepository) Create(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 
+	var UserAddedDetail models.Users
 	var payload UserFriendRequest
 	validateError := helpers.Validate(c, &payload)
 	if validateError != nil {
@@ -146,8 +160,33 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		return
 	}
 
+	userAddedDetailFilter := bson.D{{Key: "_id", Value: payload.UserId}}
+	userAddedDetailErr := config.DB.Collection("Users").FindOne(context.TODO(), userAddedDetailFilter).Decode(&UserAddedDetail)
+
+	if userAddedDetailErr == mongo.ErrNoDocuments {
+		helpers.ResponseBadRequestError(c, "Invalid user")
+		return
+	}
+
+	exceedError := uf.CheckIfExceedLimit(userDetail)
+	if exceedError != nil {
+		helpers.ResponseBadRequestError(c, "Your "+exceedError.Error())
+		return
+	}
+
+	exceedSentError := uf.CheckIfExceedLimit(UserAddedDetail)
+	if exceedSentError != nil {
+		helpers.ResponseBadRequestError(c, "Receiving user's "+exceedSentError.Error())
+		return
+	}
+
+	status := USER_PENDING
+	if UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+		status = USER_ACCEPTED
+	}
+
 	ins := models.UserFriends{
-		UserFriendsStatus:    1,
+		UserFriendsStatus:    &status,
 		UserFriendsUser1:     payload.UserId,
 		UserFriendsUser2:     userDetail.UsersId,
 		UserFriendsCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -169,19 +208,39 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		c.JSON(200, NewUserFriends)
 	} else {
 		if UserFriends.UserFriendsUser2 == userDetail.UsersId {
-			if UserFriends.UserFriendsStatus == 1 {
+			if *UserFriends.UserFriendsStatus == USER_PENDING {
 				helpers.ResponseBadRequestError(c, "Unable to add a user that is pending confirmation")
 				return
-			} else if UserFriends.UserFriendsStatus == 2 {
+			} else if *UserFriends.UserFriendsStatus == USER_ACCEPTED {
 				helpers.ResponseBadRequestError(c, "Unable to add a user that is in your friend list")
 				return
+			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
+				isAdded := false
+				*UserFriends.UserFriendsStatus = USER_PENDING
+				if UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+					*UserFriends.UserFriendsStatus = USER_ACCEPTED
+					isAdded = true
+				}
+				filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
+				update := bson.D{{Key: "$set", Value: UserFriends}}
+				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
+
+				if isAdded {
+					uf.CountFriends(UserFriends.UserFriendsUser1)
+					uf.CountFriends(UserFriends.UserFriendsUser2)
+				}
 			}
 		} else if UserFriends.UserFriendsUser1 == userDetail.UsersId {
-			UserFriends.UserFriendsStatus = 2
+			*UserFriends.UserFriendsStatus = USER_ACCEPTED
 			filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
 			update := bson.D{{Key: "$set", Value: UserFriends}}
 			config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
+
+			uf.CountFriends(UserFriends.UserFriendsUser1)
+			uf.CountFriends(UserFriends.UserFriendsUser2)
 		}
+		uf.GetDetail(c, userDetail.UsersId, &UserFriends)
+		c.JSON(200, UserFriends)
 	}
 }
 
@@ -200,7 +259,6 @@ func (uf UserFriendRepository) CheckIfFriend(c *gin.Context, userDetail models.U
 	}}).Decode(&UserFriends)
 
 	uf.GetDetail(c, userDetail.UsersId, UserFriends)
-
 	return err
 }
 
@@ -229,7 +287,7 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 	err := config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{
 		{Key: "_id", Value: id},
 		{Key: "user_friends_user_1", Value: userDetail.UsersId},
-		{Key: "user_friends_status", Value: 1},
+		{Key: "user_friends_status", Value: USER_PENDING},
 	}).Decode(&UserFriends)
 
 	if err == mongo.ErrNoDocuments {
@@ -237,10 +295,19 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 		return
 	}
 
-	UserFriends.UserFriendsStatus = 2
+	exceedError := uf.CheckIfExceedLimit(userDetail)
+	if exceedError != nil {
+		helpers.ResponseBadRequestError(c, exceedError.Error())
+		return
+	}
+
+	*UserFriends.UserFriendsStatus = USER_ACCEPTED
 	filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
 	update := bson.D{{Key: "$set", Value: UserFriends}}
 	config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
+
+	uf.CountFriends(UserFriends.UserFriendsUser1)
+	uf.CountFriends(UserFriends.UserFriendsUser2)
 
 	helpers.ResponseSuccessMessage(c, "Friend request accepted")
 }
@@ -260,8 +327,8 @@ func (uf UserFriendRepository) Delete(c *gin.Context) {
 		},
 		{
 			Key: "$or", Value: []bson.D{
-				{{Key: "user_friends_status", Value: bson.D{{Key: "$ne", Value: 0}}}},
-				{{Key: "user_friends_status", Value: bson.D{{Key: "$ne", Value: 3}}}},
+				{{Key: "user_friends_status", Value: bson.D{{Key: "$ne", Value: USER_PENDING}}}},
+				{{Key: "user_friends_status", Value: bson.D{{Key: "$ne", Value: USER_RECOMMENDED}}}},
 			},
 		},
 	}
@@ -272,22 +339,133 @@ func (uf UserFriendRepository) Delete(c *gin.Context) {
 		return
 	}
 
-	if UserFriends.UserFriendsUser1 != userDetail.UsersId && UserFriends.UserFriendsStatus == 1 {
+	if UserFriends.UserFriendsUser1 != userDetail.UsersId && *UserFriends.UserFriendsStatus == USER_PENDING {
 		//
 		helpers.ResponseBadRequestError(c, "Unable to reject. You are the friend requester")
 		return
 	}
 
-	UserFriends.UserFriendsStatus = 3
+	*UserFriends.UserFriendsStatus = USER_CANCELLED
 	filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
 	update := bson.D{{Key: "$set", Value: UserFriends}}
 	config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
+
+	uf.CountFriends(UserFriends.UserFriendsUser1)
+	uf.CountFriends(UserFriends.UserFriendsUser2)
 
 	helpers.ResponseSuccessMessage(c, "Friend request deleted")
 }
 
 func (uf UserFriendRepository) Recommended(c *gin.Context) {
-	c.Set("userfriends_type", "0")
-	c.AddParam("type", "0")
+	userDetail := helpers.GetAuthUser(c)
+	var officialAccount []models.Users
+	officialAccountFilter := bson.D{
+		{Key: "$match", Value: bson.M{
+			"users_is_business": bson.M{"$exists": true},
+			"_id":               bson.M{"$ne": userDetail.UsersId},
+		}},
+	}
+
+	lookupUser1 := bson.D{{
+		Key: "$lookup", Value: bson.M{
+			"as":   "UserFriends1",
+			"from": "UserFriends",
+			"let":  bson.M{"user_id": "$_id"},
+			"pipeline": []bson.M{
+				{"$match": bson.M{
+					"$expr": bson.M{
+						"$eq": bson.A{"$user_friends_user_1", "$$user_id"},
+					},
+				}},
+				{"$match": bson.M{"user_friends_user_2": userDetail.UsersId}},
+			},
+		},
+	}}
+
+	lookupUser2 := bson.D{{
+		Key: "$lookup", Value: bson.M{
+			"as":   "UserFriends2",
+			"from": "UserFriends",
+			"let":  bson.M{"user_id": "$_id"},
+			"pipeline": []bson.M{
+				{"$match": bson.M{
+					"$expr": bson.M{
+						"$eq": bson.A{"$user_friends_user_2", "$$user_id"},
+					},
+				}},
+				{"$match": bson.M{"user_friends_user_1": userDetail.UsersId}},
+			},
+		},
+	}}
+
+	unwindLooupUser1 := bson.D{{
+		Key: "$unwind", Value: bson.M{"path": "$UserFriends1", "preserveNullAndEmptyArrays": true},
+	}}
+
+	unwindLooupUser2 := bson.D{{
+		Key: "$unwind", Value: bson.M{"path": "$UserFriends2", "preserveNullAndEmptyArrays": true},
+	}}
+
+	excludeFriend := bson.D{{
+		Key: "$match", Value: bson.M{
+			"UserFriends1._id": bson.M{"$exists": false},
+			"UserFriends2._id": bson.M{"$exists": false},
+		},
+	}}
+
+	officialAccountPipeline := mongo.Pipeline{
+		officialAccountFilter,
+		lookupUser1,
+		lookupUser2,
+		unwindLooupUser1,
+		unwindLooupUser2,
+		excludeFriend,
+	}
+
+	cursor, _ := config.DB.Collection("Users").Aggregate(context.TODO(), officialAccountPipeline)
+	cursor.All(context.TODO(), &officialAccount)
+
+	var ins []interface{}
+
+	isOfficial := true
+	for _, v := range officialAccount {
+		ins = append(ins, models.UserFriends{
+			UserFriendsStatus:     &USER_RECOMMENDED,
+			UserFriendsUser1:      v.UsersId,
+			UserFriendsUser2:      userDetail.UsersId,
+			UserFriendsIsOfficial: &isOfficial,
+			UserFriendsCreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+		})
+	}
+	if len(ins) > 0 {
+		config.DB.Collection("UserFriends").InsertMany(context.TODO(), ins)
+	}
+
+	c.Set("userfriends_type", strconv.Itoa(USER_RECOMMENDED))
+	c.AddParam("type", strconv.Itoa(USER_RECOMMENDED))
 	uf.Retrieve(c)
+}
+
+func (uf UserFriendRepository) CountFriends(userId primitive.ObjectID) {
+	countFilter := bson.M{
+		"$or": []bson.M{
+			{"user_friends_user_1": userId},
+			{"user_friends_user_2": userId},
+		},
+		"user_friends_status": USER_ACCEPTED,
+	}
+
+	friendCount, _ := config.DB.Collection("UserFriends").CountDocuments(context.TODO(), countFilter)
+	update := bson.D{{Key: "$set", Value: bson.M{
+		"users_friends_count": int(friendCount),
+	}}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: userId}}, update)
+}
+
+func (uf UserFriendRepository) CheckIfExceedLimit(userDetail models.Users) error {
+	if userDetail.UsersFriendsCount+1 > int(config.APP_LIMIT.FriendListLimit) {
+		errMessage := "friend list has reached limit of " + strconv.Itoa(userDetail.UsersFriendsCount) + "/" + strconv.Itoa(int(config.APP_LIMIT.FriendListLimit))
+		return errors.New(errMessage)
+	}
+	return nil
 }
