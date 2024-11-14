@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.17
+## Changes
+- User friends notification (PENDING, ACCEPTED)
+
 # CHANGELOG 1.1.16
 ## Changes
 - User friends recommended (officially recommended friends, people who went together in an event)
