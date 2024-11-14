@@ -70,3 +70,11 @@ func NotificationFormatBadges(Badges models.Badges) map[string]any {
 		"badges_name": Badges.BadgesName,
 	}
 }
+
+func NotificationFormatUserFriends(UserFriends models.UserFriends) map[string]any {
+	return map[string]any{
+		"user_friends_id":     UserFriends.UserFriendsId,
+		"user_friends_user_1": UserFriends.UserFriendsUser1,
+		"user_friends_user_2": UserFriends.UserFriendsUser2,
+	}
+}

@@ -28,6 +28,8 @@ var (
 	USER_CANCELLED   = 3
 )
 
+// 1: Receiver 2: Sender
+
 func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 	userType := c.Param("type")
 	//userFriendsType, userFriendsTypeExists := c.Get("userfriends_type")
@@ -221,6 +223,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 					*UserFriends.UserFriendsStatus = USER_ACCEPTED
 					isAdded = true
 				}
+
 				filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
 				update := bson.D{{Key: "$set", Value: UserFriends}}
 				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
@@ -228,16 +231,45 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 				if isAdded {
 					uf.CountFriends(UserFriends.UserFriendsUser1)
 					uf.CountFriends(UserFriends.UserFriendsUser2)
+					uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, UserFriends)
+				} else {
+					uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, UserFriends)
 				}
 			}
 		} else if UserFriends.UserFriendsUser1 == userDetail.UsersId {
-			*UserFriends.UserFriendsStatus = USER_ACCEPTED
-			filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
-			update := bson.D{{Key: "$set", Value: UserFriends}}
-			config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
+			if *UserFriends.UserFriendsStatus == USER_PENDING {
+				*UserFriends.UserFriendsStatus = USER_ACCEPTED
+				filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
+				update := bson.D{{Key: "$set", Value: UserFriends}}
+				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
-			uf.CountFriends(UserFriends.UserFriendsUser1)
-			uf.CountFriends(UserFriends.UserFriendsUser2)
+				uf.CountFriends(UserFriends.UserFriendsUser1)
+				uf.CountFriends(UserFriends.UserFriendsUser2)
+			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
+				isAdded := false
+				*UserFriends.UserFriendsStatus = USER_PENDING
+				if UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+					*UserFriends.UserFriendsStatus = USER_ACCEPTED
+					isAdded = true
+				}
+
+				// Flip receivre as user2
+				UserFriends.UserFriendsUser1 = UserFriends.UserFriendsUser2
+				UserFriends.UserFriendsUser2 = userDetail.UsersId
+
+				filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
+				update := bson.D{{Key: "$set", Value: UserFriends}}
+				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
+
+				if isAdded {
+					uf.CountFriends(UserFriends.UserFriendsUser1)
+					uf.CountFriends(UserFriends.UserFriendsUser2)
+					uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, UserFriends)
+				} else {
+					uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, UserFriends)
+				}
+
+			}
 		}
 		uf.GetDetail(c, userDetail.UsersId, &UserFriends)
 		c.JSON(200, UserFriends)
@@ -284,6 +316,7 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 
 	var UserFriends models.UserFriends
+	var UserRequest models.Users
 	err := config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{
 		{Key: "_id", Value: id},
 		{Key: "user_friends_user_1", Value: userDetail.UsersId},
@@ -306,8 +339,12 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 	update := bson.D{{Key: "$set", Value: UserFriends}}
 	config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
+	filterRequester := bson.D{{Key: "_id", Value: UserFriends.UserFriendsUser2}}
+	config.DB.Collection("Users").FindOne(context.TODO(), filterRequester).Decode(&UserRequest)
+
 	uf.CountFriends(UserFriends.UserFriendsUser1)
 	uf.CountFriends(UserFriends.UserFriendsUser2)
+	uf.HandleNotificationsAccepted(c, userDetail, UserRequest, UserFriends)
 
 	helpers.ResponseSuccessMessage(c, "Friend request accepted")
 }
@@ -468,4 +505,27 @@ func (uf UserFriendRepository) CheckIfExceedLimit(userDetail models.Users) error
 		return errors.New(errMessage)
 	}
 	return nil
+}
+
+func (uf UserFriendRepository) HandleNotificationsPending(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) {
+	NotificationMessage := models.NotificationMessage{
+		Message: "{0}發送了好友邀請給你",
+		Data:    []map[string]interface{}{helpers.NotificationFormatUser(UserDetail), helpers.NotificationFormatUserFriends(UserFriends)},
+	}
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST, User2Detail.UsersId, NotificationMessage, UserFriends.UserFriendsId)
+}
+
+func (uf UserFriendRepository) HandleNotificationsAccepted(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) {
+	// Side 1
+	NotificationMessage := models.NotificationMessage{
+		Message: "{0}成為你的好友",
+		Data:    []map[string]interface{}{helpers.NotificationFormatUser(UserDetail), helpers.NotificationFormatUserFriends(UserFriends)},
+	}
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST_ACCEPTED, User2Detail.UsersId, NotificationMessage, UserFriends.UserFriendsId)
+
+	NotificationMessage2 := models.NotificationMessage{
+		Message: "{0}成為你的好友",
+		Data:    []map[string]interface{}{helpers.NotificationFormatUser(User2Detail), helpers.NotificationFormatUserFriends(UserFriends)},
+	}
+	helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST_ACCEPTED, UserDetail.UsersId, NotificationMessage2, UserFriends.UserFriendsId)
 }
