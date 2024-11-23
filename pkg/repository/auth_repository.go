@@ -9,6 +9,7 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+	"strconv"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -125,13 +126,33 @@ func (t AuthRepository) AuthUpdate(c *gin.Context) {
 	UpdateUser := models.Users{}
 
 	if payload.UsersUsername != "" {
+		match := helpers.RegexCompare(helpers.REGEX_USERNAME, payload.UsersUsername)
+		if !match {
+			helpers.ResponseBadRequestError(c, "Unable to change username as it does not fulfill criteria")
+			return
+		}
+
 		// Find if username already used
 		var User models.Users
 		filter := bson.D{{Key: "users_username", Value: payload.UsersUsername}}
 		config.DB.Collection("Users").FindOne(context.TODO(), filter).Decode(&User)
 
+		currentTime := time.Now()
+		lastUpdate := userDetail.UsersUsernameLastUpdate.Time()
+
+		currentTimeCompare := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 23, 59, 59, 0, currentTime.Location())
+		lastUpdateCompare := time.Date(lastUpdate.Year(), lastUpdate.Month(), lastUpdate.Day(), 23, 59, 59, 0, lastUpdate.Location())
+
+		days := int(math.Ceil(currentTimeCompare.Sub(lastUpdateCompare).Hours() / 24))
+
+		if days < 60 {
+			helpers.ResponseBadRequestError(c, "Unable to change username as it was changed "+strconv.Itoa(days)+" day ago. We only allow a change every 60 days")
+			return
+		}
+
 		if helpers.MongoZeroID(User.UsersId) {
 			UpdateUser.UsersUsername = payload.UsersUsername
+			UpdateUser.UsersUsernameLastUpdate = primitive.NewDateTimeFromTime(time.Now())
 		} else {
 			if userDetail.UsersId != User.UsersId {
 				helpers.ResponseError(c, "Username already used")
@@ -161,6 +182,26 @@ func (t AuthRepository) AuthUpdate(c *gin.Context) {
 	}
 
 	if payload.UsersName != "" {
+		match := helpers.RegexCompare(helpers.REGEX_NAME, payload.UsersName)
+		if !match {
+			helpers.ResponseBadRequestError(c, "Unable to change name as it does not fulfill criteria")
+			return
+		}
+
+		currentTime := time.Now()
+		lastUpdate := userDetail.UsersNameLastUpdate.Time()
+
+		currentTimeCompare := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 23, 59, 59, 0, currentTime.Location())
+		lastUpdateCompare := time.Date(lastUpdate.Year(), lastUpdate.Month(), lastUpdate.Day(), 23, 59, 59, 0, lastUpdate.Location())
+
+		days := int(math.Ceil(currentTimeCompare.Sub(lastUpdateCompare).Hours() / 24))
+
+		if days < 60 {
+			helpers.ResponseBadRequestError(c, "Unable to change username as it was changed "+strconv.Itoa(days)+" day ago. We only allow a change every 60 days")
+			return
+		}
+
+		UpdateUser.UsersNameLastUpdate = primitive.NewDateTimeFromTime(time.Now())
 		UpdateUser.UsersName = payload.UsersName
 	}
 
@@ -189,6 +230,12 @@ func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
 	}
 
 	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: userDetail.UsersId}}).Decode(&User)
+
+	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.Password)
+	if !match {
+		helpers.ResponseBadRequestError(c, "Password does not fulfill criteria")
+		return
+	}
 
 	checkCredential := helpers.CheckPassword(User.UsersPassword, payload.Password)
 	if !checkCredential {
@@ -412,6 +459,18 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 
 	var User models.Users
 	errUser := config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source", Value: 3}, {Key: "users_email", Value: payload.Email}}).Decode(&User)
+
+	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.Password)
+	if !match {
+		helpers.ResponseBadRequestError(c, "Password does not fulfill criteria")
+		return
+	}
+
+	matchName := helpers.RegexCompare(helpers.REGEX_NAME, payload.Name)
+	if !matchName {
+		helpers.ResponseBadRequestError(c, "Unable to change name as it does not fulfill criteria")
+		return
+	}
 
 	hashedPassword, err := helpers.HashPassword(payload.Password)
 	if err != nil {
