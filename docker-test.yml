@@ -1,21 +1,14 @@
 networks:
   oosa-network:
     external: true
-    driver: bridge
-    name: oosa-network
-    ipam:
-      config:
-        - subnet: 172.21.0.0/16
+    name: network.oosa
 
-name: oosa
+name: oosa-api-service
 services:
   oosa_user:
     container_name: oosa_user
     image: oosa-user:dev
     restart: always
-    labels:
-      - traefik.http.routers.user.entrypoints=web
-      - traefik.http.routers.user.rule= Host(`user.docker.localhost`)
     environment:
       - APP_PORT=6080
       - DB_API_HOST=oosa_mongodb
