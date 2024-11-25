@@ -9,6 +9,8 @@ type Users struct {
 	UsersBindingFacebook                  string             `bson:"users_binding_facebook,omitempty" json:"users_binding_facebook"`
 	UsersName                             string             `bson:"users_name,omitempty" json:"users_name"`
 	UsersUsername                         string             `bson:"users_username,omitempty" json:"users_username"`
+	UsersUsernameLastUpdate               primitive.DateTime `bson:"users_username_last_update,omitempty" json:"-"`
+	UsersNameLastUpdate                   primitive.DateTime `bson:"users_name_last_update,omitempty" json:"-"`
 	UsersEmail                            string             `bson:"users_email,omitempty" json:"users_email"`
 	UsersPassword                         string             `bson:"users_password,omitempty" json:"-"`
 	UsersObject                           string             `bson:"users_object,omitempty" json:"users_object"`

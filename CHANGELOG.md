@@ -1,3 +1,10 @@
+# CHANGELOG 1.1.18
+## Changes
+- Username update regex, 60 days once allowed change
+- Password check regex: POST register, PUT auth/change-password, POST forget-password
+- User name check regex: POST register, PUT auth
+- Recommended friends: other users who are not friends
+
 # CHANGELOG 1.1.17
 ## Changes
 - User friends notification (PENDING, ACCEPTED)
