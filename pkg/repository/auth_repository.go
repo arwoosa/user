@@ -231,7 +231,7 @@ func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
 
 	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: userDetail.UsersId}}).Decode(&User)
 
-	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.Password)
+	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.NewPassword)
 	if !match {
 		helpers.ResponseBadRequestError(c, "Password does not fulfill criteria")
 		return

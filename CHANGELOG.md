@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.19
+## Changes
+- Update regex change password
+
 # CHANGELOG 1.1.18
 ## Changes
 - Username update regex, 60 days once allowed change
