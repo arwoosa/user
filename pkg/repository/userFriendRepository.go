@@ -71,6 +71,7 @@ func (uf UserFriendRepository) RetrieveOther(c *gin.Context) {
 }
 
 func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, userId primitive.ObjectID, UserFriends *[]models.UserFriends) {
+	userFriendsType, userFriendsTypeExists := c.Get("userfriends_type")
 	userName := c.Query("name")
 	match := bson.D{
 		{Key: "user_friends_status", Value: userFriendStatus},
@@ -145,6 +146,48 @@ func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, use
 
 	cursor, _ := config.DB.Collection("UserFriends").Aggregate(context.TODO(), pipeline)
 	cursor.All(context.TODO(), UserFriends)
+
+	if userFriendsTypeExists {
+		if userFriendsType == strconv.Itoa(USER_RECOMMENDED) {
+			var UserCurrentFriends []models.UserFriends
+			var UserFriendsId []primitive.ObjectID
+
+			filterFriends := bson.D{
+				{
+					Key: "$or", Value: []bson.D{
+						{{Key: "user_friends_user_1", Value: userId}},
+						{{Key: "user_friends_user_2", Value: userId}},
+					},
+				},
+			}
+			cursorUserFriends, _ := config.DB.Collection("UserFriends").Find(context.TODO(), filterFriends)
+			cursorUserFriends.All(context.TODO(), &UserCurrentFriends)
+
+			UserFriendsId = append(UserFriendsId, userId)
+			for _, v := range UserCurrentFriends {
+				if v.UserFriendsUser1 == userId {
+					UserFriendsId = append(UserFriendsId, v.UserFriendsUser2)
+				} else {
+					UserFriendsId = append(UserFriendsId, v.UserFriendsUser1)
+				}
+			}
+
+			var UserNotFriends []models.Users
+			filterNotFriends := bson.D{{Key: "_id", Value: bson.M{"$nin": UserFriendsId}}}
+			cursorNotFriends, _ := config.DB.Collection("Users").Find(context.TODO(), filterNotFriends)
+			cursorNotFriends.All(context.TODO(), &UserNotFriends)
+
+			isOfficial := false
+			for _, v := range UserNotFriends {
+				*UserFriends = append(*UserFriends, models.UserFriends{
+					UserFriendsStatus:     &USER_RECOMMENDED,
+					UserFriendsUser1:      userId,
+					UserFriendsUser2:      v.UsersId,
+					UserFriendsIsOfficial: &isOfficial,
+				})
+			}
+		}
+	}
 }
 
 func (uf UserFriendRepository) Create(c *gin.Context) {

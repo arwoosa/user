@@ -72,6 +72,12 @@ func (t ForgetPasswordRepository) Update(c *gin.Context) {
 		return
 	}
 
+	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.Password)
+	if !match {
+		helpers.ResponseBadRequestError(c, "Password does not fulfill criteria")
+		return
+	}
+
 	hashedPassword, err := helpers.HashPassword(payload.Password)
 	if err != nil {
 		helpers.ResponseError(c, "Failed to hash password")
