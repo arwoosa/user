@@ -266,7 +266,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 	}
 
 	status := USER_PENDING
-	if *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+	if UserAddedDetail.UsersSettingFriendAutoAdd != nil && *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
 		status = USER_ACCEPTED
 	}
 
@@ -290,6 +290,16 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		result, _ := config.DB.Collection("UserFriends").InsertOne(context.TODO(), ins)
 		config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&NewUserFriends)
 		uf.GetDetail(c, userDetail.UsersId, &NewUserFriends)
+
+		if status == USER_PENDING {
+			uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, NewUserFriends)
+		} else if status == USER_ACCEPTED {
+			uf.CountFriends(NewUserFriends.UserFriendsUser1)
+			uf.CountFriends(NewUserFriends.UserFriendsUser2)
+			uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, NewUserFriends)
+		}
+
+		uf.GetDetail(c, userDetail.UsersId, &UserFriends)
 		c.JSON(200, NewUserFriends)
 	} else {
 		if UserFriends.UserFriendsUser2 == userDetail.UsersId {

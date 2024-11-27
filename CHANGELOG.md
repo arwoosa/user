@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.21
+## Changes
+- Fix bug on notification not sent on new user create
+
 # CHANGELOG 1.1.20
 ## Changes
 - Autoadd setting defaults to 0 when creating new account
