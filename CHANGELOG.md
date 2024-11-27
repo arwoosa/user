@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.20
+## Changes
+- Autoadd setting defaults to 0 when creating new account
+- Pending status shown in recommended friends
+- Filter recommended friends by name and username
+
 # CHANGELOG 1.1.19
 ## Changes
 - Update regex change password
