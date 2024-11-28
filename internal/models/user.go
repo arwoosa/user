@@ -22,6 +22,7 @@ type Users struct {
 	UsersSettingFriendAutoAdd             *int               `bson:"users_setting_friend_auto_add,omitempty" json:"users_setting_friend_auto_add"`
 	UsersIsSubscribed                     bool               `bson:"users_is_subscribed,omitempty" json:"users_is_subscribed"`
 	UsersIsBusiness                       bool               `bson:"users_is_business,omitempty" json:"users_is_business"`
+	UsersTakeMeStatus                     *bool              `bson:"users_take_me_status,omitempty" json:"users_take_me_status"`
 	UsersCreatedAt                        primitive.DateTime `bson:"users_created_at,omitempty" json:"users_created_at"`
 	UsersEventCompleted                   int                `bson:"users_event_completed,omitempty" json:"-"`
 	UsersEventScheduled                   int                `bson:"users_event_scheduled,omitempty" json:"-"`
@@ -47,4 +48,5 @@ type UsersAggBreathing struct {
 	UsersUsername       string             `bson:"users_username,omitempty" json:"user_username"`
 	UsersAvatar         string             `bson:"users_avatar,omitempty" json:"user_avatar"`
 	UserBreathingStatus int                `bson:"users_breathing_status,omitempty" json:"user_breathing_status"`
+	UsersTakeMeStatus   bool               `bson:"users_take_me_status,omitempty" json:"user_take_me_status"`
 }
