@@ -73,8 +73,15 @@ func (uf UserFriendRepository) RetrieveOther(c *gin.Context) {
 func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, userId primitive.ObjectID, UserFriends *[]models.UserFriends) {
 	userFriendsType, userFriendsTypeExists := c.Get("userfriends_type")
 	userName := c.Query("name")
+	userUsername := c.Query("username")
+
+	filterStatus := bson.E{Key: "user_friends_status", Value: userFriendStatus}
+	if userFriendStatus == USER_RECOMMENDED {
+		filterStatus = bson.E{Key: "user_friends_status", Value: bson.M{"$in": []int{userFriendStatus, USER_PENDING}}}
+	}
+
 	match := bson.D{
-		{Key: "user_friends_status", Value: userFriendStatus},
+		filterStatus,
 		{
 			Key: "$or", Value: []bson.D{
 				{{Key: "user_friends_user_1", Value: userId}},
@@ -117,24 +124,48 @@ func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, use
 		filter,
 	}
 
-	if userName != "" {
-		matchUsername := bson.D{
-			{
-				Key: "$match", Value: bson.D{
-					{Key: "$or", Value: []bson.M{
-						{
-							"User1._id":        bson.M{"$ne": userId},
-							"User1.users_name": bson.M{"$regex": userName, "$options": "i"},
-						},
-						{
-							"User2._id":        bson.M{"$ne": userId},
-							"User2.users_name": bson.M{"$regex": userName, "$options": "i"},
-						},
-					}},
+	if userName != "" || userUsername != "" {
+		pipeline = append(pipeline, lookupUser1, lookupUser2, unwindLooupUser1, unwindLooupUser2)
+
+		if userName != "" {
+			matchUsername := bson.D{
+				{
+					Key: "$match", Value: bson.D{
+						{Key: "$or", Value: []bson.M{
+							{
+								"User1._id":        bson.M{"$ne": userId},
+								"User1.users_name": bson.M{"$regex": userName, "$options": "i"},
+							},
+							{
+								"User2._id":        bson.M{"$ne": userId},
+								"User2.users_name": bson.M{"$regex": userName, "$options": "i"},
+							},
+						}},
+					},
 				},
-			},
+			}
+			pipeline = append(pipeline, matchUsername)
 		}
-		pipeline = append(pipeline, lookupUser1, lookupUser2, unwindLooupUser1, unwindLooupUser2, matchUsername)
+
+		if userUsername != "" {
+			matchUserUsername := bson.D{
+				{
+					Key: "$match", Value: bson.D{
+						{Key: "$or", Value: []bson.M{
+							{
+								"User1._id":            bson.M{"$ne": userId},
+								"User1.users_username": bson.M{"$regex": userUsername, "$options": "i"},
+							},
+							{
+								"User2._id":            bson.M{"$ne": userId},
+								"User2.users_username": bson.M{"$regex": userUsername, "$options": "i"},
+							},
+						}},
+					},
+				},
+			}
+			pipeline = append(pipeline, matchUserUsername)
+		}
 	}
 
 	if userFriendStatus == 0 {
@@ -174,6 +205,15 @@ func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, use
 
 			var UserNotFriends []models.Users
 			filterNotFriends := bson.D{{Key: "_id", Value: bson.M{"$nin": UserFriendsId}}}
+
+			if userName != "" {
+				filterNotFriends = append(filterNotFriends, bson.E{Key: "users_name", Value: bson.M{"$regex": userName, "$options": "i"}})
+			}
+
+			if userUsername != "" {
+				filterNotFriends = append(filterNotFriends, bson.E{Key: "users_username", Value: bson.M{"$regex": userName, "$options": "i"}})
+			}
+
 			cursorNotFriends, _ := config.DB.Collection("Users").Find(context.TODO(), filterNotFriends)
 			cursorNotFriends.All(context.TODO(), &UserNotFriends)
 
@@ -226,7 +266,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 	}
 
 	status := USER_PENDING
-	if UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+	if UserAddedDetail.UsersSettingFriendAutoAdd != nil && *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
 		status = USER_ACCEPTED
 	}
 
@@ -250,6 +290,16 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		result, _ := config.DB.Collection("UserFriends").InsertOne(context.TODO(), ins)
 		config.DB.Collection("UserFriends").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&NewUserFriends)
 		uf.GetDetail(c, userDetail.UsersId, &NewUserFriends)
+
+		if status == USER_PENDING {
+			uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, NewUserFriends)
+		} else if status == USER_ACCEPTED {
+			uf.CountFriends(NewUserFriends.UserFriendsUser1)
+			uf.CountFriends(NewUserFriends.UserFriendsUser2)
+			uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, NewUserFriends)
+		}
+
+		uf.GetDetail(c, userDetail.UsersId, &UserFriends)
 		c.JSON(200, NewUserFriends)
 	} else {
 		if UserFriends.UserFriendsUser2 == userDetail.UsersId {
@@ -262,7 +312,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
 				isAdded := false
 				*UserFriends.UserFriendsStatus = USER_PENDING
-				if UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+				if *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
 					*UserFriends.UserFriendsStatus = USER_ACCEPTED
 					isAdded = true
 				}
@@ -291,7 +341,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
 				isAdded := false
 				*UserFriends.UserFriendsStatus = USER_PENDING
-				if UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
+				if *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
 					*UserFriends.UserFriendsStatus = USER_ACCEPTED
 					isAdded = true
 				}

@@ -74,6 +74,7 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
+			autoAdd := 0
 			insert := models.Users{
 				UsersSource:                           1,
 				UsersSourceId:                         googlePayload.Subject,
@@ -84,7 +85,7 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 				UsersSettingIsVisibleFriends:          1,
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
-				UsersSettingFriendAutoAdd:             1,
+				UsersSettingFriendAutoAdd:             &autoAdd,
 				UsersIsSubscribed:                     false,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -231,7 +232,7 @@ func (t AuthRepository) AuthUpdatePassword(c *gin.Context) {
 
 	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: userDetail.UsersId}}).Decode(&User)
 
-	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.Password)
+	match := helpers.RegexCompare(helpers.REGEX_PASSWORD, payload.NewPassword)
 	if !match {
 		helpers.ResponseBadRequestError(c, "Password does not fulfill criteria")
 		return
@@ -366,6 +367,7 @@ func (t AuthRepository) AuthLine(c *gin.Context) {
 
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
+			autoAdd := 0
 			insert := models.Users{
 				UsersSource:                           2,
 				UsersSourceId:                         userInfo.UserID,
@@ -376,7 +378,7 @@ func (t AuthRepository) AuthLine(c *gin.Context) {
 				UsersSettingIsVisibleFriends:          1,
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
-				UsersSettingFriendAutoAdd:             1,
+				UsersSettingFriendAutoAdd:             &autoAdd,
 				UsersIsSubscribed:                     false,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -414,6 +416,7 @@ func (t AuthRepository) AuthFacebook(c *gin.Context) {
 
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
+			autoAdd := 0
 			insert := models.Users{
 				UsersSource:                           4,
 				UsersSourceId:                         payload.Id,
@@ -424,7 +427,7 @@ func (t AuthRepository) AuthFacebook(c *gin.Context) {
 				UsersSettingIsVisibleFriends:          1,
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
-				UsersSettingFriendAutoAdd:             1,
+				UsersSettingFriendAutoAdd:             &autoAdd,
 				UsersIsSubscribed:                     false,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -488,6 +491,7 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 		if errUser == mongo.ErrNoDocuments {
 			newUUID := uuid.New()
 			uuid := newUUID.String()
+			autoAdd := 0
 			insert := models.Users{
 				UsersSource:                           3,
 				UsersSourceId:                         uuid,
@@ -500,7 +504,7 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 				UsersSettingIsVisibleFriends:          1,
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
-				UsersSettingFriendAutoAdd:             1,
+				UsersSettingFriendAutoAdd:             &autoAdd,
 				UsersIsSubscribed:                     false,
 				UsersIsBusiness:                       isBusiness,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),

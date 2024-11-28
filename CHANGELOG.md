@@ -1,3 +1,17 @@
+# CHANGELOG 1.1.21
+## Changes
+- Fix bug on notification not sent on new user create
+
+# CHANGELOG 1.1.20
+## Changes
+- Autoadd setting defaults to 0 when creating new account
+- Pending status shown in recommended friends
+- Filter recommended friends by name and username
+
+# CHANGELOG 1.1.19
+## Changes
+- Update regex change password
+
 # CHANGELOG 1.1.18
 ## Changes
 - Username update regex, 60 days once allowed change
