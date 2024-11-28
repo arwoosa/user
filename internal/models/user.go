@@ -19,7 +19,7 @@ type Users struct {
 	UsersSettingIsVisibleFriends          int                `bson:"users_setting_is_visible_friends,omitempty" json:"users_setting_is_visible_friends"`
 	UsersSettingIsVisibleStatistics       int                `bson:"users_setting_is_visible_statistics,omitempty" json:"users_setting_is_visible_statistics"`
 	UsersSettingVisibilityActivitySummary int                `bson:"users_setting_visibility_activity_summary,omitempty" json:"users_setting_visibility_activity_summary"`
-	UsersSettingFriendAutoAdd             int                `bson:"users_setting_friend_auto_add,omitempty" json:"users_setting_friend_auto_add"`
+	UsersSettingFriendAutoAdd             *int               `bson:"users_setting_friend_auto_add,omitempty" json:"users_setting_friend_auto_add"`
 	UsersIsSubscribed                     bool               `bson:"users_is_subscribed,omitempty" json:"users_is_subscribed"`
 	UsersIsBusiness                       bool               `bson:"users_is_business,omitempty" json:"users_is_business"`
 	UsersCreatedAt                        primitive.DateTime `bson:"users_created_at,omitempty" json:"users_created_at"`

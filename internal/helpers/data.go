@@ -10,8 +10,8 @@ import (
 
 var (
 	REGEX_USERNAME = "^(?=[a-zA-Z._]{2,20}$)(?=(.*?[A-Z]){1})(?=(.?[a-z]){1}).*"
-	REGEX_NAME     = "^(?=[\u4e00-\u9fa5a-zA-Z ]{1,20}$)(?=(.*?[A-Z]){1})(?=(.?[a-z]){1}).*"
-	REGEX_PASSWORD = "^(?=[a-zA-Z0-9]{6,12}$)(?=(.*?[A-Z]){1})(?=(.?[a-z]){1})(?=.*?[0-9]).*"
+	REGEX_NAME     = "^(?=[\u4e00-\u9fa5a-zA-Z ]{1,20}$)(?=(.*?[A-Z]){1})(?=(.*?[a-z]){1}).*"
+	REGEX_PASSWORD = "^(?=[a-zA-Z0-9]{6,12}$)(?=(.*?[A-Z]){1})(?=(.*?[a-z]){1})(?=.*?[0-9]).*"
 )
 
 func StringInSlice(a string, list []string) bool {
