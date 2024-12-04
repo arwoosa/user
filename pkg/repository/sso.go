@@ -109,14 +109,9 @@ func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
 	}
 	mysession := sessions.Default(c)
 	stateObj := mysession.Get("state")
-	fmt.Println(stateObj.(string), c.Query("state"))
-	if stateObj != nil && stateObj.(string) != c.Query("state") {
-		t.Register(c)
+	if stateObj == nil || (stateObj.(string) != c.Query("state")) {
+		helpers.ResponseBadRequestError(c, "invalid state")
 		return
-	}
-
-	for key, value := range c.Request.Header {
-		fmt.Printf("%s: %s\n", key, value)
 	}
 
 	var user UserBindByHeader
