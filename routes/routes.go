@@ -33,7 +33,7 @@ func RegisterRoutes() *gin.Engine {
 		panic(err)
 	}
 	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
-
+	r.Use(sessions.Sessions("oosa_user_session", store))
 	AuthRoutes(r)
 	UserRoutes(r)
 	OosaUserRoutes(r)
