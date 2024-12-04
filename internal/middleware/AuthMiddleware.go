@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"oosa/internal/auth"
 	"oosa/internal/config"
@@ -23,10 +24,17 @@ type UserBindByHeader struct {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
-		var headerUser UserBindByHeader
-		err := c.BindHeader(&headerUser)
-		if err == nil && headerUser.Id != "" {
+		for key, value := range c.Request.Header {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+		if c.GetHeader("X-User-Id") != "" {
+			var headerUser UserBindByHeader
+			err := c.BindHeader(&headerUser)
+			if err != nil || headerUser.Id == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-USER: You are not authorized to access this resource"})
+				c.Abort()
+				return
+			}
 			var user models.Users
 			err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(&user)
 
