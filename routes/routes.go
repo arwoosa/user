@@ -17,6 +17,7 @@ func RegisterRoutes() *gin.Engine {
 	ContactUsRoutes(r)
 	OosaDailyRoutes(r)
 	WorldRoutes(r)
+	SsoRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r

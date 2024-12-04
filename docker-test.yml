@@ -25,5 +25,6 @@ services:
       - CLOURDLARE_IMAGE_DELIVERY_URL=https://oosa.life/cdn-cgi/imagedelivery
       - FRIEND_LIST_LIMIT=5000
       - MINIMUM_TOP_RANKING=2
+      - SSO_REGISTER_URL=https://dev-sso.oosa.life/api/self-service/registration/browser
     networks:
     - oosa-network
