@@ -27,7 +27,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		for key, value := range c.Request.Header {
 			fmt.Printf("%s: %s\n", key, value)
 		}
-		if c.GetHeader("X-User-Id") != "" {
+		headerUserId := c.GetHeader("X-User-Id")
+		if headerUserId != "" && headerUserId != "guest" {
 			var headerUser UserBindByHeader
 			err := c.BindHeader(&headerUser)
 			if err != nil || headerUser.Id == "" {
