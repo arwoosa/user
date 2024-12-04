@@ -103,8 +103,14 @@ type UserBindByHeader struct {
 }
 
 func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
+	fmt.Println(c.Query("state"))
+	if c.Query("state") == "" {
+		t.Register(c)
+		return
+	}
 	mysession := sessions.Default(c)
 	stateObj := mysession.Get("state")
+	fmt.Println(stateObj.(string), c.Query("state"))
 	if stateObj != nil && stateObj.(string) != c.Query("state") {
 		t.Register(c)
 		return
