@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.22
+## Changes
+- Fix bug on incorect variable for searching non friends in recommended
+- User friends rewilding activity status
+- Update take me away status
+
 # CHANGELOG 1.1.21
 ## Changes
 - Fix bug on notification not sent on new user create

@@ -33,6 +33,7 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 	{
 		auth.GET("", authRepo.Auth)
 		auth.PUT("", authRepo.AuthUpdate)
+		auth.PUT("/take-me", authRepo.AuthUpdateTakeMe)
 		auth.PUT("/change-password", authRepo.AuthUpdatePassword)
 		auth.POST("/profile-picture", authRepo.AuthUpdateProfilePicture)
 		auth.POST("/avatar", authRepo.AuthUpdateAvatar)

@@ -6,6 +6,7 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+	"sort"
 	"strconv"
 	"time"
 
@@ -49,6 +50,11 @@ func (uf UserFriendRepository) Retrieve(c *gin.Context) {
 		for k := range UserFriends {
 			uf.GetDetail(c, userDetail.UsersId, &UserFriends[k])
 		}
+
+		sort.Slice(UserFriends, func(i, j int) bool {
+			return UserFriends[i].RewildingActivityStatus < UserFriends[j].RewildingActivityStatus
+		})
+
 		c.JSON(200, UserFriends)
 	} else {
 		helpers.ResponseNoData(c, "No data")
@@ -211,7 +217,7 @@ func (uf UserFriendRepository) GetUser(c *gin.Context, userFriendStatus int, use
 			}
 
 			if userUsername != "" {
-				filterNotFriends = append(filterNotFriends, bson.E{Key: "users_username", Value: bson.M{"$regex": userName, "$options": "i"}})
+				filterNotFriends = append(filterNotFriends, bson.E{Key: "users_username", Value: bson.M{"$regex": userUsername, "$options": "i"}})
 			}
 
 			cursorNotFriends, _ := config.DB.Collection("Users").Find(context.TODO(), filterNotFriends)
@@ -400,7 +406,23 @@ func (uf UserFriendRepository) GetDetail(c *gin.Context, id primitive.ObjectID, 
 		{Key: "_id", Value: friendId},
 	}).Decode(&User)
 
-	User.UserBreathingStatus = AuthRepository{}.Breathing(c, User.UsersId)
+	rewildingStatus := 0
+	breathingStatus := AuthRepository{}.Breathing(c, User.UsersId)
+
+	if User.UsersTakeMeStatus {
+		rewildingStatus = 1
+	} else {
+		if breathingStatus < 25 {
+			rewildingStatus = 2
+		} else if breathingStatus >= 25 && breathingStatus < 75 {
+			rewildingStatus = 3
+		} else {
+			rewildingStatus = 4
+		}
+	}
+
+	User.UserBreathingStatus = breathingStatus
+	UserFriends.RewildingActivityStatus = rewildingStatus
 	UserFriends.UserFriendsDetail = &User
 }
 

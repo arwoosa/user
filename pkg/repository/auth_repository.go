@@ -33,6 +33,10 @@ type AuthUpdateRequest struct {
 	UsersEmail           string `json:"users_email"`
 	UsersSettingLanguage string `json:"users_setting_language"`
 }
+
+type AuthUpdateTakeMeRequest struct {
+	UsersTakeMeStatus int `json:"users_take_me_status"`
+}
 type AuthUpdatePasswordRequest struct {
 	Password    string `json:"password" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required"`
@@ -75,6 +79,7 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			autoAdd := 0
+			takeMeStatus := false
 			insert := models.Users{
 				UsersSource:                           1,
 				UsersSourceId:                         googlePayload.Subject,
@@ -86,6 +91,7 @@ func (t AuthRepository) AuthGoogle(c *gin.Context) {
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
 				UsersSettingFriendAutoAdd:             &autoAdd,
+				UsersTakeMeStatus:                     &takeMeStatus,
 				UsersIsSubscribed:                     false,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -113,6 +119,33 @@ func (t AuthRepository) Auth(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 	userDetail.UsersBreathingPoints = t.Breathing(c, userDetail.UsersId)
 	c.JSON(http.StatusOK, userDetail)
+}
+
+func (t AuthRepository) AuthUpdateTakeMe(c *gin.Context) {
+	userDetail := helpers.GetAuthUser(c)
+	var payload AuthUpdateTakeMeRequest
+
+	validateError := helpers.Validate(c, &payload)
+	if validateError != nil {
+		return
+	}
+
+	UpdateUser := models.Users{}
+
+	status := false
+	if payload.UsersTakeMeStatus == 1 {
+		status = true
+	}
+	UpdateUser.UsersTakeMeStatus = &status
+
+	filters := bson.D{{Key: "_id", Value: userDetail.UsersId}}
+
+	var User models.Users
+	upd := bson.D{{Key: "$set", Value: UpdateUser}}
+	config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
+	config.DB.Collection("Users").FindOne(context.TODO(), filters).Decode(&User)
+
+	c.JSON(http.StatusOK, User)
 }
 
 func (t AuthRepository) AuthUpdate(c *gin.Context) {
@@ -368,6 +401,7 @@ func (t AuthRepository) AuthLine(c *gin.Context) {
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			autoAdd := 0
+			takeMeStatus := false
 			insert := models.Users{
 				UsersSource:                           2,
 				UsersSourceId:                         userInfo.UserID,
@@ -379,6 +413,7 @@ func (t AuthRepository) AuthLine(c *gin.Context) {
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
 				UsersSettingFriendAutoAdd:             &autoAdd,
+				UsersTakeMeStatus:                     &takeMeStatus,
 				UsersIsSubscribed:                     false,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -417,6 +452,7 @@ func (t AuthRepository) AuthFacebook(c *gin.Context) {
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
 			autoAdd := 0
+			takeMeStatus := false
 			insert := models.Users{
 				UsersSource:                           4,
 				UsersSourceId:                         payload.Id,
@@ -428,6 +464,7 @@ func (t AuthRepository) AuthFacebook(c *gin.Context) {
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
 				UsersSettingFriendAutoAdd:             &autoAdd,
+				UsersTakeMeStatus:                     &takeMeStatus,
 				UsersIsSubscribed:                     false,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 			}
@@ -492,6 +529,7 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 			newUUID := uuid.New()
 			uuid := newUUID.String()
 			autoAdd := 0
+			takeMeStatus := false
 			insert := models.Users{
 				UsersSource:                           3,
 				UsersSourceId:                         uuid,
@@ -505,6 +543,7 @@ func (t AuthRepository) RegisterEmail(c *gin.Context) {
 				UsersSettingIsVisibleStatistics:       1,
 				UsersSettingVisibilityActivitySummary: 1,
 				UsersSettingFriendAutoAdd:             &autoAdd,
+				UsersTakeMeStatus:                     &takeMeStatus,
 				UsersIsSubscribed:                     false,
 				UsersIsBusiness:                       isBusiness,
 				UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
