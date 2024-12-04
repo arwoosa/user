@@ -12,7 +12,7 @@ func SsoRoutes(r *gin.Engine) *gin.Engine {
 	register := sso.Group("/register")
 	{
 		register.GET("", ssoRepo.Register)
-		register.POST("/finish", ssoRepo.CallbackAndSaveUser)
+		register.GET("/finish", ssoRepo.CallbackAndSaveUser)
 
 	}
 	return r
