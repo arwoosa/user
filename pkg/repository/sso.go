@@ -121,6 +121,14 @@ func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
 		return
 	}
 
+	var findUser models.Users
+	err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
+
+	if err == nil && findUser.UsersId.IsZero() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+		return
+	}
+
 	_, err = saveUserInfo(&user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

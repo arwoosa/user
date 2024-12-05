@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"oosa/internal/middleware"
 	"oosa/pkg/repository"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +13,6 @@ func SsoRoutes(r *gin.Engine) *gin.Engine {
 	{
 		register.GET("", ssoRepo.Register)
 		register.GET("/finish",
-			middleware.AuthMiddleware(),
 			ssoRepo.CallbackAndSaveUser)
 
 	}
