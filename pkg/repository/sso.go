@@ -72,12 +72,14 @@ func (t SsoRepository) Register(c *gin.Context) {
 	registerUrl.Scheme, registerUrl.Host = getSchemeAndHost(c)
 	state := uuid.NewString()
 	mysession := sessions.Default(c)
+	mysession.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 300, SameSite: http.SameSiteLaxMode, Path: "/"})
 	mysession.Set("state", state)
 	registerUrl.Path = fmt.Sprintf("/api%s/finish", registerUrl.Path)
 	registerUrl.RawQuery = fmt.Sprintf("state=%s", state)
 
 	ssoRegisterUrl.RawQuery = fmt.Sprintf("return_to=%s", url.QueryEscape(registerUrl.String()))
 	mysession.Set("return_to", c.Query("return_to"))
+
 	mysession.Save()
 	c.Redirect(http.StatusSeeOther, ssoRegisterUrl.String())
 }
@@ -138,7 +140,6 @@ func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
 	return_to := mysession.Get("return_to")
 	mysession.Clear()
 	if return_to != nil {
-		fmt.Println(return_to)
 		c.Redirect(http.StatusSeeOther, return_to.(string))
 		return
 	}
