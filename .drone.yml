@@ -15,6 +15,7 @@ steps:
   commands:
   - docker-compose -f docker-test.yml down
   - docker-compose -f docker-test.yml up -d
+  - docker image prune -f
 
 trigger:
   branch:
