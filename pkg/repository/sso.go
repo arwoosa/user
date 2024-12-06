@@ -36,6 +36,7 @@ func init() {
 }
 
 var defaultFriendAutoAdd = 1
+var defaultFriendTakeMestatus = false
 
 // TODO: add user db
 func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
@@ -55,11 +56,11 @@ func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
 		UsersSettingFriendAutoAdd:             &defaultFriendAutoAdd,
 		UsersIsSubscribed:                     false,
 		UsersIsBusiness:                       false,
+		UsersTakeMeStatus:                     &defaultFriendTakeMestatus,
 		UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 	}
 	result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
 	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
-	fmt.Println(user)
 	return &User, nil
 }
 
