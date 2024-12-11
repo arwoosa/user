@@ -25,7 +25,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 	response := gin.H{
 		"statistics_last_rewilding":     "",
 		"statistics_rewilding_by_month": []map[string]any{},
-		"stars_within_last_month":       0,                  // [x] If the user received stars within the last month
+		"stars_last_achieved_month":     "",                 // [x] If the user received stars within the last month
 		"stars_months_last_achieved":    0,                  // [x] If the user has not received stars in the last month
 		"oosa_star_per_user":            []map[string]any{}, // [x] 2.1 OOSA Platform Average
 		"oosa_star_current_user":        []map[string]any{}, // [x] 2.2 User’s Monthly Star Count
@@ -48,7 +48,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 		Decode(&EventParticipants)
 
 	if checkLastStar != mongo.ErrNoDocuments {
-		lastStarDiff := time.Since(EventParticipants.EventParticipantsAchievementUnlockedAt.Time())
+		/*lastStarDiff := time.Since(EventParticipants.EventParticipantsAchievementUnlockedAt.Time())
 		response["stars_months_last_achieved"] = int64(lastStarDiff.Hours() / 24 / 30)
 
 		monthFrom := time.Now().Add(-24 * time.Hour * 30)
@@ -57,7 +57,9 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 		filterStarWithinLastMonth := append(filterAchievementBase, primitive.E{Key: "event_participants_achievement_unlocked_at", Value: bson.M{"$exists": true, "$gte": primitive.NewDateTimeFromTime(monthFrom)}})
 		countStarWithinLastMonth, _ := config.DB.Collection("EventParticipants").CountDocuments(context.TODO(), filterStarWithinLastMonth, optsStarWithinLastMonth)
 
-		response["stars_within_last_month"] = countStarWithinLastMonth
+		response["stars_within_last_month"] = countStarWithinLastMonth*/
+
+		response["stars_last_achieved_month"] = EventParticipants.EventParticipantsAchievementUnlockedAt.Time().Month().String()
 	}
 
 	userMemberLength := time.Since(userDetail.UsersCreatedAt.Time())
