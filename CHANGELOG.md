@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.24
+## Changes
+- Statistics change key
+
 # CHANGELOG 1.1.23
 ## Changes
 - Statistics changes
