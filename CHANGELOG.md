@@ -1,3 +1,8 @@
+# CHANGELOG 1.1.23
+## Changes
+- Statistics changes
+- Show event scheduled count in GET auth
+
 # CHANGELOG 1.1.22
 ## Changes
 - Fix bug on incorect variable for searching non friends in recommended

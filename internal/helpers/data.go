@@ -52,3 +52,10 @@ func RegexCompare(regexString string, stringTest string) bool {
 	isMatch, _ := re.MatchString(stringTest)
 	return isMatch
 }
+
+func PadLeft(str string, length int, padString string) string {
+	for len(str) < length {
+		str = padString + str
+	}
+	return str
+}

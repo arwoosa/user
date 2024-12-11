@@ -25,7 +25,7 @@ type Users struct {
 	UsersTakeMeStatus                     *bool              `bson:"users_take_me_status,omitempty" json:"users_take_me_status"`
 	UsersCreatedAt                        primitive.DateTime `bson:"users_created_at,omitempty" json:"users_created_at"`
 	UsersEventCompleted                   int                `bson:"users_event_completed,omitempty" json:"-"`
-	UsersEventScheduled                   int                `bson:"users_event_scheduled,omitempty" json:"-"`
+	UsersEventScheduled                   int                `bson:"users_event_scheduled,omitempty" json:"users_event_scheduled"`
 	UsersBreathingPoints                  int                `bson:"users_breathing_points,omitempty" json:"users_breathing_points"`
 	UsersFollowingCount                   int                `bson:"users_following_count,omitempty" json:"users_following_count"`
 	UsersFollowerCount                    int                `bson:"users_follower_count,omitempty" json:"users_follower_count"`
