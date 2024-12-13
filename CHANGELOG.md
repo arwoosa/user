@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.25
+## Changes
+- Statistics month to number
+
 # CHANGELOG 1.1.24
 ## Changes
 - Statistics change key

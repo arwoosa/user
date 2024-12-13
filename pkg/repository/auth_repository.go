@@ -736,6 +736,10 @@ func (t AuthRepository) RetrieveBadgesByUserId(c *gin.Context, userId primitive.
 	cursor, err := config.DB.Collection("UserBadges").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), Badges)
 
+	for k, v := range *Badges {
+		(*Badges)[k].BadgesUrl = config.APP.BaseUrl + "badges/" + v.BadgesCode + ".png"
+	}
+
 	return err
 }
 

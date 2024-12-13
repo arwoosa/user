@@ -25,7 +25,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 	response := gin.H{
 		"statistics_last_rewilding":     "",
 		"statistics_rewilding_by_month": []map[string]any{},
-		"stars_last_achieved_month":     "",                 // [x] If the user received stars within the last month
+		"stars_last_achieved_month":     0,                  // [x] If the user received stars within the last month
 		"stars_months_last_achieved":    0,                  // [x] If the user has not received stars in the last month
 		"oosa_star_per_user":            []map[string]any{}, // [x] 2.1 OOSA Platform Average
 		"oosa_star_current_user":        []map[string]any{}, // [x] 2.2 User’s Monthly Star Count
@@ -59,7 +59,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 
 		response["stars_within_last_month"] = countStarWithinLastMonth*/
 
-		response["stars_last_achieved_month"] = EventParticipants.EventParticipantsAchievementUnlockedAt.Time().Month().String()
+		response["stars_last_achieved_month"] = EventParticipants.EventParticipantsAchievementUnlockedAt.Time().Month()
 	}
 
 	userMemberLength := time.Since(userDetail.UsersCreatedAt.Time())
