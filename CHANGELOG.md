@@ -1,3 +1,15 @@
+# CHANGELOG 1.1.26
+## Changes
+- N3 Badge
+
+# CHANGELOG 1.1.25
+## Changes
+- Statistics month to number
+
+# CHANGELOG 1.1.24
+## Changes
+- Statistics change key
+
 # CHANGELOG 1.1.23
 ## Changes
 - Statistics changes

@@ -736,6 +736,10 @@ func (t AuthRepository) RetrieveBadgesByUserId(c *gin.Context, userId primitive.
 	cursor, err := config.DB.Collection("UserBadges").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), Badges)
 
+	for k, v := range *Badges {
+		(*Badges)[k].BadgesUrl = config.APP.BaseUrl + "badges/" + v.BadgesCode + ".png"
+	}
+
 	return err
 }
 
@@ -774,7 +778,7 @@ func (t AuthRepository) BindFacebook(c *gin.Context) {
 		upd := bson.D{{Key: "$set", Value: userDetail}}
 		config.DB.Collection("Users").UpdateOne(context.TODO(), filters, upd)
 
-		helpers.BadgeAllocate(c, "N5", helpers.BADGE_SOCIAL, primitive.NilObjectID)
+		helpers.BadgeAllocate(c, "N5", helpers.BADGE_SOCIAL, primitive.NilObjectID, primitive.NilObjectID)
 		c.JSON(200, userDetail)
 	} else {
 		c.JSON(400, gin.H{"message": "Invalid facebook token"})
