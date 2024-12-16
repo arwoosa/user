@@ -29,5 +29,6 @@ services:
       - REDIS_HOST=oosa_redis:6379
       - REDIS_SECRET=g9X$P1qv@Wmtest!Bk
       - REDIS_SESSION_DB=0
+      - APP_BASE_URL=https://dev.oosa.life/api/
     networks:
     - oosa-network
