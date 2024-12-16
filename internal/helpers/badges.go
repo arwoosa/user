@@ -18,15 +18,19 @@ var (
 	BADGE_SOCIAL    = 3
 )
 
-func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeReference primitive.ObjectID) {
+func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeReference primitive.ObjectID, userId primitive.ObjectID) {
 	badgeDetail := BadgeDetail(badgeCode)
-	userDetail := GetAuthUser(c)
+
+	if userId == primitive.NilObjectID {
+		userDetail := GetAuthUser(c)
+		userId = userDetail.UsersId
+	}
 
 	var UserBadges models.UserBadges
 
 	if badgeDetail.BadgesIsOnce {
 		filter := bson.D{
-			{Key: "user_badges_user", Value: userDetail.UsersId},
+			{Key: "user_badges_user", Value: userId},
 			{Key: "user_badges_badge", Value: badgeDetail.BadgesId},
 		}
 		config.DB.Collection("UserBadges").FindOne(context.TODO(), filter).Decode(&UserBadges)
@@ -37,7 +41,7 @@ func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeRefer
 	}
 
 	insert := models.UserBadges{
-		UserBadgesUser:      userDetail.UsersId,
+		UserBadgesUser:      userId,
 		UserBadgesBadge:     badgeDetail.BadgesId,
 		UserBadgesCreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -51,7 +55,8 @@ func BadgeAllocate(c *gin.Context, badgeCode string, badgeSource int, badgeRefer
 		Message: "太棒了！恭喜你獲得了一枚新的徽章!",
 		Data:    []map[string]interface{}{NotificationFormatBadges(badgeDetail)},
 	}
-	NotificationsCreate(c, NOTIFICATION_BADGE_NEW, userDetail.UsersId, NotificationMessage, result.InsertedID.(primitive.ObjectID))
+
+	NotificationsCreate(c, NOTIFICATION_BADGE_NEW, userId, NotificationMessage, result.InsertedID.(primitive.ObjectID))
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 		return

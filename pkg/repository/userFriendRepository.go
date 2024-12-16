@@ -300,8 +300,8 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		if status == USER_PENDING {
 			uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, NewUserFriends)
 		} else if status == USER_ACCEPTED {
-			uf.CountFriends(NewUserFriends.UserFriendsUser1)
-			uf.CountFriends(NewUserFriends.UserFriendsUser2)
+			uf.CountFriends(c, NewUserFriends.UserFriendsUser1)
+			uf.CountFriends(c, NewUserFriends.UserFriendsUser2)
 			uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, NewUserFriends)
 		}
 
@@ -328,8 +328,8 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
 				if isAdded {
-					uf.CountFriends(UserFriends.UserFriendsUser1)
-					uf.CountFriends(UserFriends.UserFriendsUser2)
+					uf.CountFriends(c, UserFriends.UserFriendsUser1)
+					uf.CountFriends(c, UserFriends.UserFriendsUser2)
 					uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, UserFriends)
 				} else {
 					uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, UserFriends)
@@ -342,8 +342,8 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 				update := bson.D{{Key: "$set", Value: UserFriends}}
 				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
-				uf.CountFriends(UserFriends.UserFriendsUser1)
-				uf.CountFriends(UserFriends.UserFriendsUser2)
+				uf.CountFriends(c, UserFriends.UserFriendsUser1)
+				uf.CountFriends(c, UserFriends.UserFriendsUser2)
 			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
 				isAdded := false
 				*UserFriends.UserFriendsStatus = USER_PENDING
@@ -361,8 +361,8 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 				config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
 				if isAdded {
-					uf.CountFriends(UserFriends.UserFriendsUser1)
-					uf.CountFriends(UserFriends.UserFriendsUser2)
+					uf.CountFriends(c, UserFriends.UserFriendsUser1)
+					uf.CountFriends(c, UserFriends.UserFriendsUser2)
 					uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, UserFriends)
 				} else {
 					uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, UserFriends)
@@ -457,8 +457,8 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 	filterRequester := bson.D{{Key: "_id", Value: UserFriends.UserFriendsUser2}}
 	config.DB.Collection("Users").FindOne(context.TODO(), filterRequester).Decode(&UserRequest)
 
-	uf.CountFriends(UserFriends.UserFriendsUser1)
-	uf.CountFriends(UserFriends.UserFriendsUser2)
+	uf.CountFriends(c, UserFriends.UserFriendsUser1)
+	uf.CountFriends(c, UserFriends.UserFriendsUser2)
 	uf.HandleNotificationsAccepted(c, userDetail, UserRequest, UserFriends)
 
 	helpers.ResponseSuccessMessage(c, "Friend request accepted")
@@ -502,8 +502,8 @@ func (uf UserFriendRepository) Delete(c *gin.Context) {
 	update := bson.D{{Key: "$set", Value: UserFriends}}
 	config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
-	uf.CountFriends(UserFriends.UserFriendsUser1)
-	uf.CountFriends(UserFriends.UserFriendsUser2)
+	uf.CountFriends(c, UserFriends.UserFriendsUser1)
+	uf.CountFriends(c, UserFriends.UserFriendsUser2)
 
 	helpers.ResponseSuccessMessage(c, "Friend request deleted")
 }
@@ -598,7 +598,7 @@ func (uf UserFriendRepository) Recommended(c *gin.Context) {
 	uf.Retrieve(c)
 }
 
-func (uf UserFriendRepository) CountFriends(userId primitive.ObjectID) {
+func (uf UserFriendRepository) CountFriends(c *gin.Context, userId primitive.ObjectID) {
 	countFilter := bson.M{
 		"$or": []bson.M{
 			{"user_friends_user_1": userId},
@@ -611,6 +611,11 @@ func (uf UserFriendRepository) CountFriends(userId primitive.ObjectID) {
 	update := bson.D{{Key: "$set", Value: bson.M{
 		"users_friends_count": int(friendCount),
 	}}}
+
+	if friendCount == 1 {
+		helpers.BadgeAllocate(c, "N3", helpers.BADGE_FRIENDS, primitive.NilObjectID, userId)
+	}
+
 	config.DB.Collection("Users").UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: userId}}, update)
 }
 
