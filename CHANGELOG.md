@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.27
+## Changes
+- N2 Badge
+
 # CHANGELOG 1.1.26
 ## Changes
 - N3 Badge
