@@ -31,7 +31,9 @@ func (r OosaDailyRepository) Watched(c *gin.Context) {
 			{Key: "$lt", Value: primitive.NewDateTimeFromTime(periodEnd)},
 		}},
 	}
+
 	config.DB.Collection("Exp").FindOne(context.TODO(), filter).Decode(&todayExp)
+	helpers.BadgeAllocate(c, "N2", helpers.BADGE_OOSA_DAILY, primitive.NilObjectID, primitive.NilObjectID)
 	if !helpers.MongoZeroID(todayExp.ExpId) {
 		helpers.ResponseBadRequestError(c, "Exp already awarded for today")
 		return
