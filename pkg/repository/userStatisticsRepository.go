@@ -23,14 +23,14 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 	userDetail := helpers.GetAuthUser(c)
 
 	response := gin.H{
-		"statistics_last_rewilding":     "",
-		"statistics_rewilding_by_month": []map[string]any{},
-		"stars_last_achieved_month":     0,                  // [x] If the user received stars within the last month
-		"stars_months_last_achieved":    0,                  // [x] If the user has not received stars in the last month
-		"oosa_star_per_user":            []map[string]any{}, // [x] 2.1 OOSA Platform Average
-		"oosa_star_current_user":        []map[string]any{}, // [x] 2.2 User’s Monthly Star Count
-		"user_star_per_year":            0,                  // [x] 3.1 User’s Average Star Count per Year: Total stars received by the user to date divided by the number of years they have been using the app.
-		"user_star_by_type":             []map[string]any{}, // [x] 3.2 Rewilding-Type Statistics: Cumulative star count for the user under each rewilding type (retrieved from /references via rewilding_types).
+		//"statistics_last_rewilding":     "",
+		//"statistics_rewilding_by_month": []map[string]any{},
+		"stars_last_achieved_month":  0,                  // [x] If the user received stars within the last month
+		"stars_months_last_achieved": 0,                  // [x] If the user has not received stars in the last month
+		"oosa_star_per_user":         []map[string]any{}, // [x] 2.1 OOSA Platform Average
+		"oosa_star_current_user":     []map[string]any{}, // [x] 2.2 User’s Monthly Star Count
+		"user_star_per_year":         0,                  // [x] 3.1 User’s Average Star Count per Year: Total stars received by the user to date divided by the number of years they have been using the app.
+		"user_star_by_type":          []map[string]any{}, // [x] 3.2 Rewilding-Type Statistics: Cumulative star count for the user under each rewilding type (retrieved from /references via rewilding_types).
 	}
 
 	var EventParticipants models.EventParticipants
@@ -260,7 +260,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 	response["oosa_star_current_user"] = userStatisticsCurrentUserByMonth
 	response["user_star_by_type"] = monthlyRewildingGroupCurrentUserCount
 
-	var lastRewilding []models.Events
+	/*var lastRewilding []models.Events
 	lastRewildingAgg := mongo.Pipeline{
 		bson.D{{
 			Key: "$match", Value: bson.M{"event_participants_user": userDetail.UsersId, "event_participants_status": 1},
@@ -289,7 +289,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 
 	if len(lastRewilding) > 0 {
 		response["statistics_last_rewilding"] = lastRewilding[0].EventsDate
-	}
+	}*/
 
 	var rewildingByMonth []models.EventStatistics
 	rewildingByMonthAgg := mongo.Pipeline{
@@ -307,7 +307,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 		},
 	}
 
-	rewildingByMonthCursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), rewildingByMonthAgg)
+	/*rewildingByMonthCursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), rewildingByMonthAgg)
 	rewildingByMonthCursor.All(context.TODO(), &rewildingByMonth)
 
 	if err != nil {
@@ -315,7 +315,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 		return
 	} else {
 		response["statistics_rewilding_by_month"] = rewildingByMonth
-	}
+	}*/
 
 	c.JSON(http.StatusOK, response)
 }
