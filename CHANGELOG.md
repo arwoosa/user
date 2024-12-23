@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.29
+## Changes
+- Badges count
+
 # CHANGELOG 1.1.28
 ## Changes
 - User statistics remove keys: statistics_last_rewilding, statistics_rewilding_by_month

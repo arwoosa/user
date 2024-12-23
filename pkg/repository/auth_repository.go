@@ -707,9 +707,15 @@ func (t AuthRepository) RetrieveBadgesByUserId(c *gin.Context, userId primitive.
 			Key: "$match", Value: bson.M{"user_badges_user": userId},
 		}},
 		bson.D{{
+			Key: "$group", Value: bson.D{
+				{Key: "_id", Value: "$user_badges_badge"},
+				{Key: "badges_count", Value: bson.D{{Key: "$count", Value: bson.D{}}}},
+			},
+		}},
+		bson.D{{
 			Key: "$lookup", Value: bson.M{
 				"from":         "Badges",
-				"localField":   "user_badges_badge",
+				"localField":   "_id",
 				"foreignField": "_id",
 				"as":           "UserBadgesDetail",
 			},
@@ -718,7 +724,12 @@ func (t AuthRepository) RetrieveBadgesByUserId(c *gin.Context, userId primitive.
 			Key: "$unwind", Value: bson.M{"path": "$UserBadgesDetail"},
 		}},
 		bson.D{{
-			Key: "$replaceRoot", Value: bson.M{"newRoot": "$UserBadgesDetail"},
+			Key: "$replaceRoot", Value: bson.M{"newRoot": bson.M{
+				"$mergeObjects": bson.A{
+					"$UserBadgesDetail",
+					bson.M{"badges_count": "$badges_count"},
+				},
+			}},
 		}},
 	}
 
@@ -733,6 +744,7 @@ func (t AuthRepository) RetrieveBadgesByUserId(c *gin.Context, userId primitive.
 				Key: "$match", Value: bson.M{"UserBadgesDetail.badges_is_once": false},
 			}})
 	}
+
 	cursor, err := config.DB.Collection("UserBadges").Aggregate(context.TODO(), agg)
 	cursor.All(context.TODO(), Badges)
 
