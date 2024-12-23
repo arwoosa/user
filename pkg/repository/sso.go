@@ -8,7 +8,6 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
-	"os"
 	"strings"
 	"time"
 
@@ -19,20 +18,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type SsoRepository struct{}
-
-var ssoRegisterUrl *url.URL
-
-func init() {
-	var err error
-	registerUrl := os.Getenv("SSO_REGISTER_URL")
-	if registerUrl == "" {
-		panic("SSO_REGISTER_URL not set")
+func NewSSoRepository(url *url.URL) ssoRepository {
+	return ssoRepository{
+		ssoRegisterUrl: url,
 	}
-	ssoRegisterUrl, err = url.Parse(registerUrl)
-	if err != nil {
-		panic("failed to parse SSO_REGISTER_URL: " + err.Error())
-	}
+}
+
+type ssoRepository struct {
+	ssoRegisterUrl *url.URL
 }
 
 var defaultFriendAutoAdd = 1
@@ -64,7 +57,7 @@ func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
 	return &User, nil
 }
 
-func (t SsoRepository) Register(c *gin.Context) {
+func (t ssoRepository) Register(c *gin.Context) {
 	if c.Query("return_to") == "" {
 		helpers.ResponseBadRequestError(c, "missing return_to")
 		return
@@ -78,11 +71,11 @@ func (t SsoRepository) Register(c *gin.Context) {
 	registerUrl.Path = fmt.Sprintf("/api%s/finish", registerUrl.Path)
 	registerUrl.RawQuery = fmt.Sprintf("state=%s", state)
 
-	ssoRegisterUrl.RawQuery = fmt.Sprintf("return_to=%s", url.QueryEscape(registerUrl.String()))
+	t.ssoRegisterUrl.RawQuery = fmt.Sprintf("return_to=%s", url.QueryEscape(registerUrl.String()))
 	mysession.Set("return_to", c.Query("return_to"))
 
 	mysession.Save()
-	c.Redirect(http.StatusSeeOther, ssoRegisterUrl.String())
+	c.Redirect(http.StatusSeeOther, t.ssoRegisterUrl.String())
 }
 
 func getSchemeAndHost(c *gin.Context) (string, string) {
@@ -105,7 +98,7 @@ type UserBindByHeader struct {
 	Language string `header:"X-User-Language"`
 }
 
-func (t SsoRepository) CallbackAndSaveUser(c *gin.Context) {
+func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
 	if c.Query("state") == "" {
 		helpers.ResponseBadRequestError(c, "missing state")
 		return
