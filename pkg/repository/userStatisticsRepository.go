@@ -181,7 +181,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 	monthlyRewildingCurrentUserCursor.All(context.TODO(), &monthlyRewildingCurrentUserCount)
 
 	var RefRewildingTypes []models.RefRewildingTypes
-	cursor, err := config.DB.Collection("RefRewildingTypes").Find(context.TODO(), bson.D{})
+	cursor, _ := config.DB.Collection("RefRewildingTypes").Find(context.TODO(), bson.D{})
 	cursor.All(context.TODO(), &RefRewildingTypes)
 
 	for _, v := range RefRewildingTypes {
@@ -291,7 +291,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 		response["statistics_last_rewilding"] = lastRewilding[0].EventsDate
 	}*/
 
-	var rewildingByMonth []models.EventStatistics
+	/*var rewildingByMonth []models.EventStatistics
 	rewildingByMonthAgg := mongo.Pipeline{
 		bson.D{{
 			Key: "$group", Value: bson.D{
@@ -305,7 +305,7 @@ func (t UserStatisticsRepository) Retrieve(c *gin.Context) {
 		bson.D{
 			{Key: "$sort", Value: bson.M{"_id": 1}},
 		},
-	}
+	}*/
 
 	/*rewildingByMonthCursor, err := config.DB.Collection("Events").Aggregate(context.TODO(), rewildingByMonthAgg)
 	rewildingByMonthCursor.All(context.TODO(), &rewildingByMonth)
