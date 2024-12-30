@@ -28,7 +28,7 @@ type ssoRepository struct {
 	ssoRegisterUrl *url.URL
 }
 
-var defaultFriendAutoAdd = 1
+var defaultFriendAutoAdd = 0
 var defaultFriendTakeMestatus = false
 
 // TODO: add user db

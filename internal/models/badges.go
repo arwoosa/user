@@ -11,6 +11,7 @@ type Badges struct {
 	BadgesCategory      string             `bson:"badges_category,omitempty" json:"badges_category,omitempty"`
 	BadgesUrl           string             `bson:"badges_url,omitempty" json:"badges_url,omitempty"`
 	BadgesIsOnce        bool               `bson:"badges_is_once,omitempty" json:"badges_is_once,omitempty"`
+	BadgesCount         *int               `bson:"badges_count,omitempty" json:"badges_count,omitempty"`
 }
 
 type BadgesDetail struct {
