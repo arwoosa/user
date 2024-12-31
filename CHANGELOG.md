@@ -1,3 +1,7 @@
+# CHANGELOG 1.1.30
+## Changes
+- Add users cancelled to be treated as adding new friend
+
 # CHANGELOG 1.1.29
 ## Changes
 - Badges count
