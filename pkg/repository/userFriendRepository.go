@@ -315,7 +315,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 			} else if *UserFriends.UserFriendsStatus == USER_ACCEPTED {
 				helpers.ResponseBadRequestError(c, "Unable to add a user that is in your friend list")
 				return
-			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
+			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED || *UserFriends.UserFriendsStatus == USER_CANCELLED {
 				isAdded := false
 				*UserFriends.UserFriendsStatus = USER_PENDING
 				if *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
@@ -344,7 +344,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 
 				uf.CountFriends(c, UserFriends.UserFriendsUser1)
 				uf.CountFriends(c, UserFriends.UserFriendsUser2)
-			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED {
+			} else if *UserFriends.UserFriendsStatus == USER_RECOMMENDED || *UserFriends.UserFriendsStatus == USER_CANCELLED {
 				isAdded := false
 				*UserFriends.UserFriendsStatus = USER_PENDING
 				if *UserAddedDetail.UsersSettingFriendAutoAdd == 1 {
