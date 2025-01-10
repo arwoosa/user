@@ -23,6 +23,7 @@ type AppConfig struct {
 	ClourdlareImageAccountHash string
 	ClourdlareImageDeliveryUrl string
 	FacebookUrl                string
+	SSORegisterUrl             string
 }
 
 type AppLimit struct {
@@ -54,6 +55,7 @@ func InitialiseConfig() {
 	APP.ClourdlareImageAccountHash = os.Getenv("CLOURDLARE_IMAGE_ACCOUNT_HASH")
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
 	APP.FacebookUrl = os.Getenv("OATH_FACEBOOK_BASE_URL")
+	APP.SSORegisterUrl = os.Getenv("SSO_REGISTER_URL")
 
 	friendListLimit, friendListLimitErr := strconv.ParseInt(os.Getenv("FRIEND_LIST_LIMIT"), 10, 64)
 	minimumTopRanking, minimumTopRankingErr := strconv.ParseInt(os.Getenv("MINIMUM_TOP_RANKING"), 10, 64)
