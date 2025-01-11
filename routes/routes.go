@@ -42,13 +42,13 @@ func initSession(r *gin.Engine) {
 }
 
 func initRedisSession(r *gin.Engine) {
-	redisHost := os.Getenv("REDIS_HOST")
+	redisHost := os.Getenv("SESSION_REDIS_HOST")
 	if redisHost == "" {
-		panic("REDIS_HOST not set")
+		panic("SESSION_REDIS_HOST not set")
 	}
-	redisSessionDB := os.Getenv("REDIS_SESSION_DB")
+	redisSessionDB := os.Getenv("SESSION_REDIS_DB")
 	if redisSessionDB == "" {
-		panic("REDIS_SESSION_DB not set")
+		panic("SESSION_REDIS_DB not set")
 	}
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {
@@ -68,9 +68,9 @@ func initRedisSession(r *gin.Engine) {
 }
 
 func initPostgresSession(r *gin.Engine) {
-	connectionStr := os.Getenv("PSQL_CONNECTION_STRING")
+	connectionStr := os.Getenv("SESSION_PSQL_CONNECTION_STRING")
 	if connectionStr == "" {
-		panic("PSQL_CONNECTION_STRING not set")
+		panic("SESSION_PSQL_CONNECTION_STRING not set")
 	}
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	if sessionSecret == "" {

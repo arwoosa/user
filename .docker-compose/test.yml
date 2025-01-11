@@ -11,8 +11,7 @@ services:
     restart: always
     environment:
       - APP_PORT=6080
-      - DB_API_HOST=oosa_mongodb
-      - DB_API_PORT=27017
+      - DB_CONNECTION=mongodb://oosa_mongodb:27017/?timeoutMS=5000&maxPoolSize=20&w=majority
       - DB_API_DATABASE=oosa
       - OAUTH_GOOGLE_CLIENT_ID=81587618939-gsnlsh1r70hkq43jr7l50f4s9dv1ka9n.apps.googleusercontent.com
       - OAUTH_LINE_CLIENT_ID=2005318818
@@ -29,8 +28,8 @@ services:
       - SESSION_STORE_TYPE=redis
       - SESSION_SECRET=u5zsfTpxLD8cdLmY
       - SESSION_KEY=oosa_dev_user_session
-      - REDIS_HOST=oosa_redis:6379
-      - REDIS_SESSION_DB=0
+      - SESSION_REDIS_HOST=oosa_redis:6379
+      - SESSION_REDIS_DB=0
       - APP_BASE_URL=https://dev.oosa.life/api/
     networks:
     - oosa-network

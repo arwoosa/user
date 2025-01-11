@@ -12,8 +12,7 @@ type AppConfig struct {
 	OauthGoogleClientId        string
 	BaseUrl                    string
 	AppPort                    string
-	DbApiHost                  string
-	DbApiPort                  string
+	DbConnection               string
 	DbApiDatabase              string
 	DbApiUsername              string
 	DbApiPassword              string
@@ -44,8 +43,7 @@ func InitialiseConfig() {
 	APP.BaseUrl = os.Getenv("APP_BASE_URL")
 	APP.OauthGoogleClientId = os.Getenv("OAUTH_GOOGLE_CLIENT_ID")
 	APP.AppPort = os.Getenv("APP_PORT")
-	APP.DbApiHost = os.Getenv("DB_API_HOST")
-	APP.DbApiPort = os.Getenv("DB_API_PORT")
+	APP.DbConnection = os.Getenv("DB_CONNECTION")
 	APP.DbApiDatabase = os.Getenv("DB_API_DATABASE")
 	APP.DbApiUsername = os.Getenv("DB_API_USERNAME")
 	APP.DbApiPassword = os.Getenv("DB_API_PASSWORD")
