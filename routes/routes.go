@@ -27,6 +27,7 @@ func RegisterRoutes() *gin.Engine {
 	OosaDailyRoutes(r)
 	WorldRoutes(r)
 	SsoRoutes(r)
+	healthRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
@@ -34,6 +35,9 @@ func RegisterRoutes() *gin.Engine {
 
 func initSession(r *gin.Engine) {
 	sessionStore := os.Getenv("SESSION_STORE_TYPE")
+	if sessionStore == "" {
+		return
+	}
 	if sessionStore == "redis" {
 		initRedisSession(r)
 	} else if sessionStore == "postgres" {
