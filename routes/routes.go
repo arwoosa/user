@@ -5,7 +5,10 @@ import (
 	_ "oosa/docs"
 	"os"
 
+	"database/sql"
+
 	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"     // swagger embed files
@@ -14,6 +17,8 @@ import (
 
 func RegisterRoutes() *gin.Engine {
 	r := gin.Default()
+	initSession(r)
+
 	AuthRoutes(r)
 	UserRoutes(r)
 	OosaUserRoutes(r)
@@ -28,23 +33,63 @@ func RegisterRoutes() *gin.Engine {
 }
 
 func initSession(r *gin.Engine) {
+	sessionStore := os.Getenv("SESSION_STORE_TYPE")
+	if sessionStore == "redis" {
+		initRedisSession(r)
+	} else if sessionStore == "postgres" {
+		initPostgresSession(r)
+	}
+}
+
+func initRedisSession(r *gin.Engine) {
 	redisHost := os.Getenv("REDIS_HOST")
 	if redisHost == "" {
 		panic("REDIS_HOST not set")
-	}
-	redisSecret := os.Getenv("REDIS_SECRET")
-	if redisSecret == "" {
-		panic("REDIS_SECRET not set")
 	}
 	redisSessionDB := os.Getenv("REDIS_SESSION_DB")
 	if redisSessionDB == "" {
 		panic("REDIS_SESSION_DB not set")
 	}
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		panic("SESSION_SECRET not set")
+	}
+	sessionKey := os.Getenv("SESSION_KEY")
+	if sessionKey == "" {
+		panic("SESSION_KEY not set")
+	}
 
-	store, err := redis.NewStoreWithDB(10, "tcp", redisHost, "", redisSessionDB, []byte(redisSecret))
+	store, err := redis.NewStoreWithDB(10, "tcp", redisHost, "", redisSessionDB, []byte(sessionSecret))
 	if err != nil {
 		panic(err)
 	}
 	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
-	r.Use(sessions.Sessions("oosa_user_session", store))
+	r.Use(sessions.Sessions(sessionKey, store))
+}
+
+func initPostgresSession(r *gin.Engine) {
+	connectionStr := os.Getenv("PSQL_CONNECTION_STRING")
+	if connectionStr == "" {
+		panic("PSQL_CONNECTION_STRING not set")
+	}
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		panic("SESSION_SECRET not set")
+	}
+	sessionKey := os.Getenv("SESSION_KEY")
+	if sessionKey == "" {
+		panic("SESSION_KEY not set")
+	}
+
+	db, err := sql.Open("postgres", connectionStr)
+	if err != nil {
+		panic("failed to connect database: " + err.Error())
+	}
+
+	store, err := postgres.NewStore(db, []byte(sessionSecret))
+	if err != nil {
+		panic("failed new store: " + err.Error())
+	}
+	store.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 86400, SameSite: http.SameSiteLaxMode})
+	r.Use(sessions.Sessions(sessionKey, store))
 }
