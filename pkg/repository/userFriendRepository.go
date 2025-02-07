@@ -633,6 +633,8 @@ func (uf UserFriendRepository) HandleNotificationsPending(c *gin.Context, UserDe
 		Data:    []map[string]interface{}{helpers.NotificationFormatUser(UserDetail), helpers.NotificationFormatUserFriends(UserFriends)},
 	}
 	helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST, User2Detail.UsersId, NotificationMessage, UserFriends.UserFriendsId)
+
+	helpers.NotificationAddToContext(c, User2Detail.UsersId, helpers.NOTIFICATION_FRIEND_REQUEST, UserFriends.UserFriendsId, map[string]interface{}{})
 }
 
 func (uf UserFriendRepository) HandleNotificationsAccepted(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) {
