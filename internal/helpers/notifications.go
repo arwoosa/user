@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"context"
-	"log"
 	"oosa/internal/config"
 	"oosa/internal/models"
 	"reflect"
@@ -45,10 +44,12 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 }
 
 func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event string, to primitive.ObjectID, data map[string]interface{}) {
-	userDocFrom, err := findUserSourceId(from)
-	userDocTo, err := findUserSourceId(to)
-	if err != nil {
-		log.Printf("Failed to find user source id for userId=%s: %v", to.Hex(), err)
+	userDocFrom, errfrom := findUserSourceId(from)
+	userDocTo, errto := findUserSourceId(to)
+	if errfrom != nil {
+		return
+	}
+	if errto != nil {
 		return
 	}
 	newNotifPayload := map[string]interface{}{
