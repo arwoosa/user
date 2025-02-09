@@ -306,6 +306,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		}
 
 		uf.GetDetail(c, userDetail.UsersId, &UserFriends)
+		helpers.NotificationWriteHeader(c)
 		c.JSON(200, NewUserFriends)
 	} else {
 		if UserFriends.UserFriendsUser2 == userDetail.UsersId {
@@ -371,6 +372,7 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 			}
 		}
 		uf.GetDetail(c, userDetail.UsersId, &UserFriends)
+		helpers.NotificationWriteHeader(c)
 		c.JSON(200, UserFriends)
 	}
 }

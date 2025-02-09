@@ -35,7 +35,7 @@ func UserRoutes(r *gin.Engine) *gin.Engine {
 	friends := r.Group("user/friends", middleware.AuthMiddleware())
 	{
 		friends.GET("", userFriendRepository.Retrieve)
-		friends.POST("", middleware.NotificationHeaderMiddleware(), userFriendRepository.Create)
+		friends.POST("", userFriendRepository.Create)
 		friends.PUT(":userFriendId", userFriendRepository.Update)
 		friends.DELETE(":userFriendId", userFriendRepository.Delete)
 		friends.GET("recommended", userFriendRepository.Recommended)
