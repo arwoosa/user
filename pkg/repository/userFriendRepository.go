@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/arwoosa/notifaction/helper"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -298,7 +299,14 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 		uf.GetDetail(c, userDetail.UsersId, &NewUserFriends)
 
 		if status == USER_PENDING {
-			uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, NewUserFriends)
+			notifyMsg, err := uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, NewUserFriends)
+			if err != nil {
+				helpers.ResponseError(c, "Failed to create friend request notification")
+				return
+			}
+			if notifyMsg != nil {
+				notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
+			}
 		} else if status == USER_ACCEPTED {
 			uf.CountFriends(c, NewUserFriends.UserFriendsUser1)
 			uf.CountFriends(c, NewUserFriends.UserFriendsUser2)
@@ -365,7 +373,10 @@ func (uf UserFriendRepository) Create(c *gin.Context) {
 					uf.CountFriends(c, UserFriends.UserFriendsUser2)
 					uf.HandleNotificationsAccepted(c, userDetail, UserAddedDetail, UserFriends)
 				} else {
-					uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, UserFriends)
+					notifyMsg, err := uf.HandleNotificationsPending(c, userDetail, UserAddedDetail, UserFriends)
+					if err == nil && notifyMsg != nil {
+						notifyMsg.WriteToHeader(c, config.APP.NotificationHeaderName)
+					}
 				}
 
 			}
@@ -627,12 +638,24 @@ func (uf UserFriendRepository) CheckIfExceedLimit(userDetail models.Users) error
 	return nil
 }
 
-func (uf UserFriendRepository) HandleNotificationsPending(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) {
+func (uf UserFriendRepository) HandleNotificationsPending(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) (helper.NotifyMsg, error) {
 	NotificationMessage := models.NotificationMessage{
 		Message: "{0}發送了好友邀請給你",
 		Data:    []map[string]interface{}{helpers.NotificationFormatUser(UserDetail), helpers.NotificationFormatUserFriends(UserFriends)},
 	}
 	helpers.NotificationsCreate(c, helpers.NOTIFICATION_FRIEND_REQUEST, User2Detail.UsersId, NotificationMessage, UserFriends.UserFriendsId)
+
+	notifyMsg, err := helper.NewNotifyMsg(
+		helpers.NOTIFICATION_FRIEND_REQUEST,
+		User2Detail.UsersId,
+		UserFriends.UserFriendsId,
+		map[string]string{},
+		helpers.FindUserSourceId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return notifyMsg, nil
 }
 
 func (uf UserFriendRepository) HandleNotificationsAccepted(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) {
