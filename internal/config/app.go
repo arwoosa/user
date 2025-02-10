@@ -23,7 +23,6 @@ type AppConfig struct {
 	ClourdlareImageDeliveryUrl string
 	FacebookUrl                string
 	SSORegisterUrl             string
-	NotificationContextKey     string
 	NotificationHeaderName     string
 }
 
@@ -56,7 +55,6 @@ func InitialiseConfig() {
 	APP.ClourdlareImageDeliveryUrl = os.Getenv("CLOURDLARE_IMAGE_DELIVERY_URL")
 	APP.FacebookUrl = os.Getenv("OATH_FACEBOOK_BASE_URL")
 	APP.SSORegisterUrl = os.Getenv("SSO_REGISTER_URL")
-	APP.NotificationContextKey = os.Getenv("NOTIFICATION_CONTEXT_KEY")
 	APP.NotificationHeaderName = os.Getenv("NOTIFICATION_HEADER_NAME")
 
 	friendListLimit, friendListLimitErr := strconv.ParseInt(os.Getenv("FRIEND_LIST_LIMIT"), 10, 64)

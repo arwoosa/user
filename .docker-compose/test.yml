@@ -31,7 +31,6 @@ services:
       - SESSION_REDIS_HOST=oosa_redis:6379
       - SESSION_REDIS_DB=0
       - APP_BASE_URL=https://dev.oosa.life/api/
-      - NOTIFICATION_CONTEXT_KEY=notification
       - NOTIFICATION_HEADER_NAME=x-notification
     networks:
     - oosa-network
