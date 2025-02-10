@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"oosa/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -176,4 +179,23 @@ func GetAuthUser(c *gin.Context) models.Users {
 	userDetail := user.(*models.Users)
 
 	return *userDetail
+}
+
+func FindUserSourceId(userIds []primitive.ObjectID) (map[primitive.ObjectID]string, error) {
+	collection := config.DB.Collection("Users")
+
+	var usersDoc []models.Users
+	cursor, err := collection.Find(context.TODO(), bson.M{"_id": bson.M{"$in": userIds}})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(context.TODO(), &usersDoc)
+	if err != nil {
+		return nil, err
+	}
+	result := map[primitive.ObjectID]string{}
+	for _, u := range usersDoc {
+		result[u.UsersId] = u.UsersSourceId
+	}
+	return result, nil
 }

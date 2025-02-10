@@ -2,16 +2,11 @@ package helpers
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"oosa/internal/config"
 	"oosa/internal/models"
-	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -31,7 +26,6 @@ var (
 	NOTIFICATION_EVENT_JOIN_DENIED       = "EVENT_JOIN_DENIED"
 	NOTIFICATION_COLOG_PHOTO_UPLOADED    = "COLOG_PHOTO_UPLOADED"
 	NOTIFICATION_COLOG_REMIND            = "COLOG_REMIND"
-	notification_key                     = "NOTIFICATION"
 )
 
 func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.ObjectID, message models.NotificationMessage, identifier primitive.ObjectID) {
@@ -45,134 +39,6 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 		NotificationsCreatedBy:  userDetail.UsersId,
 	}
 	config.DB.Collection("Notifications").InsertOne(context.TODO(), insert)
-}
-
-func NotificationAddToContext(c *gin.Context, from primitive.ObjectID, event string, to primitive.ObjectID, data map[string]interface{}) {
-	userDocFrom, errfrom := findUserSourceId(from)
-	userDocTo, errto := findUserSourceId(to)
-	if errfrom != nil {
-		return
-	}
-	if errto != nil {
-		return
-	}
-	newNotifPayload := map[string]interface{}{
-		"from":  userDocFrom.UsersSourceId,
-		"event": event,
-		"to":    []string{userDocTo.UsersSourceId},
-		"data":  data,
-	}
-
-	existing, exists := c.Get(notification_key)
-	if !exists {
-		c.Set(notification_key, newNotifPayload)
-		return
-	}
-
-	switch notif := existing.(type) {
-	case []interface{}:
-		found := false
-		for i, n := range notif {
-			if existingNotif, ok := n.(map[string]interface{}); ok {
-				if isSameNotification(existingNotif, newNotifPayload) {
-					mergeToField(existingNotif, newNotifPayload)
-					notif[i] = existingNotif
-					found = true
-					break
-				}
-			}
-		}
-		if !found {
-			notif = append(notif, newNotifPayload)
-		}
-		c.Set(notification_key, notif)
-	case map[string]interface{}:
-		if isSameNotification(notif, newNotifPayload) {
-			mergeToField(notif, newNotifPayload)
-			c.Set(notification_key, notif)
-		} else {
-			c.Set(notification_key, []interface{}{notif, newNotifPayload})
-		}
-	default:
-		c.Set(notification_key, newNotifPayload)
-	}
-}
-
-func NotificationWriteHeader(c *gin.Context) {
-	if notif, exists := c.Get(notification_key); exists {
-		var notifSlice []interface{}
-		switch n := notif.(type) {
-		case []interface{}:
-			notifSlice = n
-		default:
-			notifSlice = []interface{}{n}
-		}
-
-		jsonData, err := json.Marshal(notifSlice)
-		if err != nil {
-			fmt.Println("ERROR marshaling notification:", err)
-			return
-		}
-
-		encoded := base64.StdEncoding.EncodeToString(jsonData)
-
-		c.Writer.Header().Set(config.APP.NotificationHeaderName, encoded)
-	}
-}
-
-func findUserSourceId(userId primitive.ObjectID) (*models.Users, error) {
-	collection := config.DB.Collection("Users")
-
-	var userDoc models.Users
-	err := collection.FindOne(context.TODO(), bson.M{"_id": userId}).Decode(&userDoc)
-	if err != nil {
-		return nil, err
-	}
-	return &userDoc, nil
-}
-
-func isSameNotification(a, b map[string]interface{}) bool {
-	if a["from"] != b["from"] {
-		return false
-	}
-	if a["event"] != b["event"] {
-		return false
-	}
-	return reflect.DeepEqual(a["data"], b["data"])
-}
-
-func mergeToField(existingNotif, newNotif map[string]interface{}) {
-	var existingTo []string
-	if toVal, ok := existingNotif["to"]; ok {
-		if arr, ok2 := toVal.([]string); ok2 {
-			existingTo = arr
-		} else {
-			existingTo = []string{}
-		}
-	}
-	var newTo []string
-	if toVal, ok := newNotif["to"]; ok {
-		if arr, ok2 := toVal.([]string); ok2 {
-			newTo = arr
-		} else {
-			newTo = []string{}
-		}
-	}
-	for _, recipient := range newTo {
-		if !stringInSlice(recipient, existingTo) {
-			existingTo = append(existingTo, recipient)
-		}
-	}
-	existingNotif["to"] = existingTo
-}
-
-func stringInSlice(s string, list []string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 func NotificationFormatEvent(Events models.Events) map[string]any {
