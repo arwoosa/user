@@ -647,8 +647,8 @@ func (uf UserFriendRepository) HandleNotificationsPending(c *gin.Context, UserDe
 
 	notifyMsg, err := helper.NewNotifyMsg(
 		helpers.NOTIFICATION_FRIEND_REQUEST,
+		UserDetail.UsersId,
 		User2Detail.UsersId,
-		UserFriends.UserFriendsId,
 		map[string]string{},
 		helpers.FindUserSourceId,
 	)
