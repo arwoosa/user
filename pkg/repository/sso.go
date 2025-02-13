@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func NewSSoRepository(url *url.URL) ssoRepository {
@@ -99,44 +100,41 @@ type UserBindByHeader struct {
 }
 
 func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
+	mysession := sessions.Default(c)
+	defer func() {
+		return_to := mysession.Get("return_to")
+		mysession.Clear()
+		if return_to != nil {
+			c.Redirect(http.StatusSeeOther, return_to.(string))
+			return
+		}
+		mysession.Save()
+	}()
 	if c.Query("state") == "" {
-		helpers.ResponseBadRequestError(c, "missing state")
 		return
 	}
-	mysession := sessions.Default(c)
+
 	stateObj := mysession.Get("state")
 	if stateObj == nil || (stateObj.(string) != c.Query("state")) {
-		helpers.ResponseBadRequestError(c, "invalid state")
 		return
 	}
 
 	var user UserBindByHeader
 	err := c.BindHeader(&user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var findUser models.Users
 	err = config.DB.Collection("Users").FindOne(c, bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
 
-	if err != nil || !findUser.UsersId.IsZero() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+	if err != mongo.ErrNoDocuments || !findUser.UsersId.IsZero() {
 		return
 	}
 
 	_, err = saveUserInfo(c, &user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	return_to := mysession.Get("return_to")
-	mysession.Clear()
-	if return_to != nil {
-		c.Redirect(http.StatusSeeOther, return_to.(string))
-		return
-	}
-	mysession.Save()
 
 }
