@@ -32,7 +32,7 @@ var defaultFriendAutoAdd = 0
 var defaultFriendTakeMestatus = false
 
 // TODO: add user db
-func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
+func saveUserInfo(c context.Context, user *UserBindByHeader) (*models.Users, error) {
 	var User models.Users
 
 	insert := models.Users{
@@ -52,8 +52,8 @@ func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
 		UsersTakeMeStatus:                     &defaultFriendTakeMestatus,
 		UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 	}
-	result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
-	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
+	result, _ := config.DB.Collection("Users").InsertOne(c, insert)
+	config.DB.Collection("Users").FindOne(c, bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
 	return &User, nil
 }
 
@@ -118,14 +118,14 @@ func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
 	}
 
 	var findUser models.Users
-	err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
+	err = config.DB.Collection("Users").FindOne(c, bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
 
-	if err == nil && findUser.UsersId.IsZero() {
+	if err != nil || !findUser.UsersId.IsZero() {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
 		return
 	}
 
-	_, err = saveUserInfo(&user)
+	_, err = saveUserInfo(c, &user)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
