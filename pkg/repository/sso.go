@@ -127,7 +127,7 @@ func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
 
 	var findUser models.Users
 	err = config.DB.Collection("Users").FindOne(c, bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
-
+	fmt.Println(err, findUser.UsersId.Hex())
 	if err != mongo.ErrNoDocuments || !findUser.UsersId.IsZero() {
 		return
 	}
