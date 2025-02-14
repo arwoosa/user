@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"oosa/internal/auth"
 	"oosa/internal/config"
@@ -76,9 +75,7 @@ func ssoAuth(c *gin.Context) bool {
 		c.Abort()
 		return true
 	}
-	for k, h := range c.Request.Header {
-		fmt.Println(k, h)
-	}
+
 	needUpdate := false
 	if user.UsersAvatar == "" {
 		user.UsersAvatar = headerUser.Avatar
