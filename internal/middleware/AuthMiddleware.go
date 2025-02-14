@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"oosa/internal/auth"
 	"oosa/internal/config"
@@ -75,18 +76,20 @@ func ssoAuth(c *gin.Context) bool {
 		c.Abort()
 		return true
 	}
-
+	for k, h := range c.Request.Header {
+		fmt.Println(k, h)
+	}
 	needUpdate := false
 	if user.UsersAvatar == "" {
 		user.UsersAvatar = headerUser.Avatar
 		needUpdate = true
 	}
-	if user.UsersName == "" {
-		user.UsersName = headerUser.User
+	if user.UsersUsername == "" {
+		user.UsersUsername = headerUser.User
 		needUpdate = true
 	}
 	if needUpdate {
-		config.DB.Collection("Users").UpdateByID(c, user.UsersId, bson.D{{Key: "$set", Value: bson.D{{Key: "users_avatar", Value: user.UsersAvatar}, {Key: "users_name", Value: user.UsersName}}}})
+		config.DB.Collection("Users").UpdateByID(c, user.UsersId, bson.D{{Key: "$set", Value: bson.D{{Key: "users_avatar", Value: user.UsersAvatar}, {Key: "users_username", Value: user.UsersUsername}}}})
 	}
 	c.Set("user", &user)
 	c.Next()
