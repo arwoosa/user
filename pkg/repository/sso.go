@@ -8,6 +8,7 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+	"oosa/internal/structs"
 	"strings"
 	"time"
 
@@ -33,7 +34,7 @@ var defaultFriendAutoAdd = 0
 var defaultFriendTakeMestatus = false
 
 // TODO: add user db
-func saveUserInfo(c context.Context, user *UserBindByHeader) (*models.Users, error) {
+func saveUserInfo(c context.Context, user *structs.UserBindByHeader) (*models.Users, error) {
 	var User models.Users
 
 	insert := models.Users{
@@ -41,8 +42,9 @@ func saveUserInfo(c context.Context, user *UserBindByHeader) (*models.Users, err
 		UsersSourceId:                         user.Id,
 		UsersName:                             user.Name,
 		UsersEmail:                            user.Email,
+		UsersUsername:                         user.User,
 		UsersObject:                           user.User,
-		UsersAvatar:                           "",
+		UsersAvatar:                           user.Avatar,
 		UsersSettingLanguage:                  user.Language,
 		UsersSettingIsVisibleFriends:          1,
 		UsersSettingIsVisibleStatistics:       1,
@@ -91,14 +93,6 @@ func getSchemeAndHost(c *gin.Context) (string, string) {
 	return scheme, host
 }
 
-type UserBindByHeader struct {
-	Id       string `header:"X-User-Id"`
-	User     string `header:"X-User-Account"`
-	Email    string `header:"X-User-Email"`
-	Name     string `header:"X-User-Name"`
-	Language string `header:"X-User-Language"`
-}
-
 func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
 	mysession := sessions.Default(c)
 	defer func() {
@@ -119,7 +113,7 @@ func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
 		return
 	}
 
-	var user UserBindByHeader
+	var user structs.UserBindByHeader
 	err := c.BindHeader(&user)
 	if err != nil {
 		return
@@ -127,7 +121,6 @@ func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
 
 	var findUser models.Users
 	err = config.DB.Collection("Users").FindOne(c, bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
-	fmt.Println(err, findUser.UsersId.Hex())
 	if err != mongo.ErrNoDocuments || !findUser.UsersId.IsZero() {
 		return
 	}

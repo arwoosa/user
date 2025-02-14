@@ -7,19 +7,12 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+	"oosa/internal/structs"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
-
-type UserBindByHeader struct {
-	Id       string `header:"X-User-Id"`
-	User     string `header:"X-User-Account"`
-	Email    string `header:"X-User-Email"`
-	Name     string `header:"X-User-Name"`
-	Language string `header:"X-User-Language"`
-}
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -66,13 +59,14 @@ func ssoAuth(c *gin.Context) bool {
 		return true
 	}
 
-	var headerUser UserBindByHeader
+	var headerUser structs.UserBindByHeader
 	err := c.BindHeader(&headerUser)
 	if err != nil || headerUser.Id == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-USER: You are not authorized to access this resource"})
 		c.Abort()
 		return true
 	}
+
 	var user models.Users
 	err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(&user)
 
@@ -80,6 +74,19 @@ func ssoAuth(c *gin.Context) bool {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-USER: You are not authorized to access this resource"})
 		c.Abort()
 		return true
+	}
+
+	needUpdate := false
+	if user.UsersAvatar == "" {
+		user.UsersAvatar = headerUser.Avatar
+		needUpdate = true
+	}
+	if user.UsersName == "" {
+		user.UsersName = headerUser.User
+		needUpdate = true
+	}
+	if needUpdate {
+		config.DB.Collection("Users").UpdateByID(c, user.UsersId, bson.D{{Key: "$set", Value: bson.D{{Key: "users_avatar", Value: user.UsersAvatar}, {Key: "users_name", Value: user.UsersName}}}})
 	}
 	c.Set("user", &user)
 	c.Next()
