@@ -438,6 +438,10 @@ func (uf UserFriendRepository) GetDetail(c *gin.Context, id primitive.ObjectID, 
 }
 
 func (uf UserFriendRepository) Update(c *gin.Context) {
+	if !helpers.IsHeaderHasNotifcationId(c) {
+		helpers.ResponseBadRequestError(c, "notification id is required")
+		return
+	}
 	id, _ := primitive.ObjectIDFromHex(c.Param("userFriendId"))
 	userDetail := helpers.GetAuthUser(c)
 
@@ -476,6 +480,10 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 }
 
 func (uf UserFriendRepository) Delete(c *gin.Context) {
+	if !helpers.IsHeaderHasNotifcationId(c) {
+		helpers.ResponseBadRequestError(c, "notification id is required")
+		return
+	}
 	id, _ := primitive.ObjectIDFromHex(c.Param("userFriendId"))
 	userDetail := helpers.GetAuthUser(c)
 
@@ -508,14 +516,18 @@ func (uf UserFriendRepository) Delete(c *gin.Context) {
 		return
 	}
 
-	*UserFriends.UserFriendsStatus = USER_CANCELLED
+	*UserFriends.UserFriendsStatus = USER_RECOMMENDED
 	filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
 	update := bson.D{{Key: "$set", Value: UserFriends}}
 	config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
 
 	uf.CountFriends(c, UserFriends.UserFriendsUser1)
 	uf.CountFriends(c, UserFriends.UserFriendsUser2)
-
+	err = helpers.NotificationsUpdateState(c, helpers.NOTIFICATION_STATE_DONE)
+	if err != nil {
+		helpers.ResponseError(c, "Failed to update notification state")
+		return
+	}
 	helpers.ResponseSuccessMessage(c, "Friend request deleted")
 }
 
@@ -659,7 +671,12 @@ func (uf UserFriendRepository) HandleNotificationsPending(c *gin.Context, UserDe
 }
 
 func (uf UserFriendRepository) HandleNotificationsAccepted(c *gin.Context, UserDetail models.Users, User2Detail models.Users, UserFriends models.UserFriends) {
-	// Side 1
+	err := helpers.NotificationsUpdateState(c, helpers.NOTIFICATION_STATE_DONE)
+	if err != nil {
+		helpers.ResponseError(c, "Failed to update notification state")
+		return
+	}
+
 	NotificationMessage := models.NotificationMessage{
 		Message: "{0}成為你的好友",
 		Data:    []map[string]interface{}{helpers.NotificationFormatUser(UserDetail), helpers.NotificationFormatUserFriends(UserFriends)},
