@@ -508,7 +508,7 @@ func (uf UserFriendRepository) Delete(c *gin.Context) {
 		return
 	}
 
-	*UserFriends.UserFriendsStatus = USER_CANCELLED
+	*UserFriends.UserFriendsStatus = USER_RECOMMENDED
 	filter := bson.D{{Key: "_id", Value: UserFriends.UserFriendsId}}
 	update := bson.D{{Key: "$set", Value: UserFriends}}
 	config.DB.Collection("UserFriends").UpdateOne(context.TODO(), filter, update)
