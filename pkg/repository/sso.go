@@ -8,6 +8,7 @@ import (
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+	"oosa/internal/structs"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func NewSSoRepository(url *url.URL) ssoRepository {
@@ -32,7 +34,7 @@ var defaultFriendAutoAdd = 0
 var defaultFriendTakeMestatus = false
 
 // TODO: add user db
-func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
+func saveUserInfo(c context.Context, user *structs.UserBindByHeader) (*models.Users, error) {
 	var User models.Users
 
 	insert := models.Users{
@@ -40,8 +42,9 @@ func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
 		UsersSourceId:                         user.Id,
 		UsersName:                             user.Name,
 		UsersEmail:                            user.Email,
+		UsersUsername:                         user.User,
 		UsersObject:                           user.User,
-		UsersAvatar:                           "",
+		UsersAvatar:                           user.Avatar,
 		UsersSettingLanguage:                  user.Language,
 		UsersSettingIsVisibleFriends:          1,
 		UsersSettingIsVisibleStatistics:       1,
@@ -52,8 +55,8 @@ func saveUserInfo(user *UserBindByHeader) (*models.Users, error) {
 		UsersTakeMeStatus:                     &defaultFriendTakeMestatus,
 		UsersCreatedAt:                        primitive.NewDateTimeFromTime(time.Now()),
 	}
-	result, _ := config.DB.Collection("Users").InsertOne(context.TODO(), insert)
-	config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
+	result, _ := config.DB.Collection("Users").InsertOne(c, insert)
+	config.DB.Collection("Users").FindOne(c, bson.D{{Key: "_id", Value: result.InsertedID}}).Decode(&User)
 	return &User, nil
 }
 
@@ -90,53 +93,41 @@ func getSchemeAndHost(c *gin.Context) (string, string) {
 	return scheme, host
 }
 
-type UserBindByHeader struct {
-	Id       string `header:"X-User-Id"`
-	User     string `header:"X-User-Account"`
-	Email    string `header:"X-User-Email"`
-	Name     string `header:"X-User-Name"`
-	Language string `header:"X-User-Language"`
-}
-
 func (t ssoRepository) CallbackAndSaveUser(c *gin.Context) {
+	mysession := sessions.Default(c)
+	defer func() {
+		return_to := mysession.Get("return_to")
+		mysession.Clear()
+		if return_to != nil {
+			c.Redirect(http.StatusSeeOther, return_to.(string))
+			return
+		}
+		mysession.Save()
+	}()
 	if c.Query("state") == "" {
-		helpers.ResponseBadRequestError(c, "missing state")
 		return
 	}
-	mysession := sessions.Default(c)
+
 	stateObj := mysession.Get("state")
 	if stateObj == nil || (stateObj.(string) != c.Query("state")) {
-		helpers.ResponseBadRequestError(c, "invalid state")
 		return
 	}
 
-	var user UserBindByHeader
+	var user structs.UserBindByHeader
 	err := c.BindHeader(&user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	var findUser models.Users
-	err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
-
-	if err == nil && findUser.UsersId.IsZero() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+	err = config.DB.Collection("Users").FindOne(c, bson.D{{Key: "users_source_id", Value: user.Id}}).Decode(&findUser)
+	if err != mongo.ErrNoDocuments || !findUser.UsersId.IsZero() {
 		return
 	}
 
-	_, err = saveUserInfo(&user)
+	_, err = saveUserInfo(c, &user)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	return_to := mysession.Get("return_to")
-	mysession.Clear()
-	if return_to != nil {
-		c.Redirect(http.StatusSeeOther, return_to.(string))
-		return
-	}
-	mysession.Save()
 
 }
