@@ -10,6 +10,7 @@ type Notifications struct {
 	NotificationsIdentifier primitive.ObjectID  `bson:"notifications_identifier,omitempty" json:"notifications_identifier,omitempty"`
 	NotificationsCreatedAt  primitive.DateTime  `bson:"notifications_created_at,omitempty" json:"notifications_created_at,omitempty"`
 	NotificationsCreatedBy  primitive.ObjectID  `bson:"notifications_created_by,omitempty" json:"notifications_created_by,omitempty"`
+	NotificationsState      string              `bson:"notifications_state,omitempty" json:"notifications_state,omitempty"`
 }
 
 type NotificationMessage struct {

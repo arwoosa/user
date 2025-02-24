@@ -2,11 +2,13 @@ package helpers
 
 import (
 	"context"
+	"errors"
 	"oosa/internal/config"
 	"oosa/internal/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,6 +30,11 @@ var (
 	NOTIFICATION_COLOG_REMIND            = "COLOG_REMIND"
 )
 
+const (
+	NOTIFICATION_STATE_NEW  = "new"
+	NOTIFICATION_STATE_DONE = "done"
+)
+
 func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.ObjectID, message models.NotificationMessage, identifier primitive.ObjectID) {
 	userDetail := GetAuthUser(c)
 	insert := models.Notifications{
@@ -37,8 +44,44 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 		NotificationsIdentifier: identifier,
 		NotificationsCreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 		NotificationsCreatedBy:  userDetail.UsersId,
+		NotificationsState:      NOTIFICATION_STATE_NEW,
 	}
 	config.DB.Collection("Notifications").InsertOne(context.TODO(), insert)
+}
+
+const (
+	header_notificationId = "X-Notification-Id"
+)
+
+func IsHeaderHasNotifcationId(c *gin.Context) bool {
+	header := c.GetHeader(header_notificationId)
+	if header == "" {
+		return false
+	}
+	_, err := primitive.ObjectIDFromHex(header)
+	return err == nil
+}
+
+func NotificationsUpdateState(c *gin.Context, state string) error {
+	header := c.GetHeader(header_notificationId)
+	if header == "" {
+		return errors.New("header X-Notification-Id is required")
+	}
+
+	notificationID, err := primitive.ObjectIDFromHex(header)
+	if err != nil {
+		return errors.New("invalid notification ID")
+	}
+	filter := bson.D{
+		{Key: "_id", Value: notificationID},
+	}
+	update := bson.D{
+		{Key: "$set", Value: bson.M{
+			"notifications_state": state,
+		}},
+	}
+	config.DB.Collection("Notifications").UpdateOne(context.TODO(), filter, update)
+	return nil
 }
 
 func NotificationFormatEvent(Events models.Events) map[string]any {
