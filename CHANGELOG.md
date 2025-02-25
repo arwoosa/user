@@ -1,3 +1,9 @@
+# CHANGELOG 1.1.31
+## Changes
+- Fix : BUG-87 BUG-258 could add friend after delete
+- Fix : BUG-331 Add a notification status management feature, update the notification status, and check the notification ID header.
+- user notification remove bages notification
+
 # CHANGELOG 1.1.30
 ## Changes
 - Add users cancelled to be treated as adding new friend
