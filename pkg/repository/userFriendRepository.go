@@ -438,7 +438,7 @@ func (uf UserFriendRepository) GetDetail(c *gin.Context, id primitive.ObjectID, 
 }
 
 func (uf UserFriendRepository) Update(c *gin.Context) {
-	if !helpers.IsHeaderHasNotifcationId(c) {
+	if !helpers.IsQueryHasNotifcationId(c) {
 		helpers.ResponseBadRequestError(c, "notification id is required")
 		return
 	}
@@ -480,7 +480,7 @@ func (uf UserFriendRepository) Update(c *gin.Context) {
 }
 
 func (uf UserFriendRepository) Delete(c *gin.Context) {
-	if !helpers.IsHeaderHasNotifcationId(c) {
+	if !helpers.IsQueryHasNotifcationId(c) {
 		helpers.ResponseBadRequestError(c, "notification id is required")
 		return
 	}
