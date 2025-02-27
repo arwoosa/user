@@ -50,25 +50,25 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 }
 
 const (
-	header_notificationId = "X-Notification-Id"
+	param_notificationId = "Notification_Id"
 )
 
-func IsHeaderHasNotifcationId(c *gin.Context) bool {
-	header := c.GetHeader(header_notificationId)
-	if header == "" {
+func IsParamHasNotifcationId(c *gin.Context) bool {
+	notificationId := c.Param(param_notificationId)
+	if notificationId == "" {
 		return false
 	}
-	_, err := primitive.ObjectIDFromHex(header)
+	_, err := primitive.ObjectIDFromHex(notificationId)
 	return err == nil
 }
 
 func NotificationsUpdateState(c *gin.Context, state string) error {
-	header := c.GetHeader(header_notificationId)
-	if header == "" {
-		return errors.New("header X-Notification-Id is required")
+	notificationId := c.Param(param_notificationId)
+	if notificationId == "" {
+		return errors.New("param Notification_Id is required")
 	}
 
-	notificationID, err := primitive.ObjectIDFromHex(header)
+	notificationID, err := primitive.ObjectIDFromHex(notificationId)
 	if err != nil {
 		return errors.New("invalid notification ID")
 	}

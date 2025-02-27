@@ -761,6 +761,7 @@ func (t AuthRepository) RetrieveNotifications(c *gin.Context) {
 
 	filter := bson.D{
 		{Key: "notifications_user", Value: userDetail.UsersId},
+		{Key: "notifications_state", Value: bson.D{{Key: "$ne", Value: "done"}}},
 	}
 	cursor, err := config.DB.Collection("Notifications").Find(context.TODO(), filter)
 
