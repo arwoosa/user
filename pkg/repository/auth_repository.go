@@ -770,7 +770,15 @@ func (t AuthRepository) RetrieveNotifications(c *gin.Context) {
 	}
 	cursor.All(context.TODO(), &results)
 
-	c.JSON(200, results)
+	var notifactions []models.Notifications
+	for _, v := range results {
+		if v.NotificationsCode == helpers.NOTIFICATION_BADGE_NEW {
+			continue
+		}
+		notifactions = append(notifactions, v)
+	}
+
+	c.JSON(200, notifactions)
 }
 
 func (t AuthRepository) BindFacebook(c *gin.Context) {
