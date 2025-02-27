@@ -50,11 +50,11 @@ func NotificationsCreate(c *gin.Context, notifCode string, userId primitive.Obje
 }
 
 const (
-	param_notificationId = "Notification_Id"
+	query_notificationId = "Notification_Id"
 )
 
-func IsParamHasNotifcationId(c *gin.Context) bool {
-	notificationId := c.Param(param_notificationId)
+func IsQueryHasNotifcationId(c *gin.Context) bool {
+	notificationId := c.Query(query_notificationId)
 	if notificationId == "" {
 		return false
 	}
@@ -63,7 +63,7 @@ func IsParamHasNotifcationId(c *gin.Context) bool {
 }
 
 func NotificationsUpdateState(c *gin.Context, state string) error {
-	notificationId := c.Param(param_notificationId)
+	notificationId := c.Query(query_notificationId)
 	if notificationId == "" {
 		return errors.New("param Notification_Id is required")
 	}
