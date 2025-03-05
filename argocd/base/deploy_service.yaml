@@ -114,6 +114,11 @@ spec:
             secretKeyRef:
               name: user-secrets
               key: APP_BASE_URL
+        - name: NOTIFICATION_HEADER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: user-secrets
+              key: NOTIFICATION_HEADER_NAME
       volumes:
         - name: user-secrets
           secret:  
