@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func WorldRoutes(r *gin.Engine) *gin.Engine {
+func WorldRoutes(r gin.IRouter) gin.IRouter {
 	repository := repository.StatisticsRepository{}
 	main := r.Group("/world")
 	{

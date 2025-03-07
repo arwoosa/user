@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func OosaDailyRoutes(r *gin.Engine) *gin.Engine {
+func OosaDailyRoutes(r gin.IRouter) gin.IRouter {
 	repository := repository.OosaDailyRepository{}
 	main := r.Group("/oosa-daily", middleware.AuthMiddleware())
 	{

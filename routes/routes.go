@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 	_ "oosa/docs"
+	"oosa/internal/middleware"
 	"os"
 
 	"database/sql"
@@ -17,23 +18,23 @@ import (
 
 func RegisterRoutes() *gin.Engine {
 	r := gin.Default()
-	initSession(r)
 
-	AuthRoutes(r)
-	UserRoutes(r)
-	OosaUserRoutes(r)
-	PaymentRoutes(r)
-	ContactUsRoutes(r)
-	OosaDailyRoutes(r)
-	WorldRoutes(r)
-	SsoRoutes(r)
+	checkRegisteredGroup := r.Group("", middleware.CheckRegisterMiddleware())
+	AuthRoutes(checkRegisteredGroup)
+	UserRoutes(checkRegisteredGroup)
+	OosaUserRoutes(checkRegisteredGroup)
+	PaymentRoutes(checkRegisteredGroup)
+	ContactUsRoutes(checkRegisteredGroup)
+	OosaDailyRoutes(checkRegisteredGroup)
+	WorldRoutes(checkRegisteredGroup)
+	SsoRoutes(checkRegisteredGroup)
 	healthRoutes(r)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r
 }
 
-func initSession(r *gin.Engine) {
+func initSession(r gin.IRouter) {
 	sessionStore := os.Getenv("SESSION_STORE_TYPE")
 	if sessionStore == "" {
 		return
@@ -45,7 +46,7 @@ func initSession(r *gin.Engine) {
 	}
 }
 
-func initRedisSession(r *gin.Engine) {
+func initRedisSession(r gin.IRouter) {
 	redisHost := os.Getenv("SESSION_REDIS_HOST")
 	if redisHost == "" {
 		panic("SESSION_REDIS_HOST not set")
@@ -71,7 +72,7 @@ func initRedisSession(r *gin.Engine) {
 	r.Use(sessions.Sessions(sessionKey, store))
 }
 
-func initPostgresSession(r *gin.Engine) {
+func initPostgresSession(r gin.IRouter) {
 	connectionStr := os.Getenv("SESSION_PSQL_CONNECTION_STRING")
 	if connectionStr == "" {
 		panic("SESSION_PSQL_CONNECTION_STRING not set")

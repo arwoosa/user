@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func PaymentRoutes(r *gin.Engine) *gin.Engine {
+func PaymentRoutes(r gin.IRouter) gin.IRouter {
 	repository := repository.PaymentRepository{}
 	main := r.Group("/line/pay")
 	{

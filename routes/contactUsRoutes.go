@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ContactUsRoutes(r *gin.Engine) *gin.Engine {
+func ContactUsRoutes(r gin.IRouter) gin.IRouter {
 	repository := repository.ContactUsRepository{}
 	main := r.Group("/contact-us")
 	{
