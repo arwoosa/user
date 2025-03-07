@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"oosa/internal/config"
 	"oosa/internal/models"
@@ -29,17 +30,20 @@ func CheckRegisterMiddleware() gin.HandlerFunc {
 		if err != nil || headerUser.Id == "" {
 			return
 		}
-		var user *models.Users
-		err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(user)
+		var user models.Users
+		err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(&user)
 
 		if err != nil && err == mongo.ErrNoDocuments {
-			user, err = saveUserInfo(c, &headerUser)
+			savedUser, err := saveUserInfo(c, &headerUser)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": "AUTH01-USER: " + err.Error()})
 				c.Abort()
 				return
 			}
+			user = *savedUser
 		}
+
+		fmt.Println("check", user)
 
 		needUpdate := false
 		if user.UsersAvatar == "" {
