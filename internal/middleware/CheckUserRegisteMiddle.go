@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"oosa/internal/config"
 	"oosa/internal/models"
@@ -43,8 +42,6 @@ func CheckRegisterMiddleware() gin.HandlerFunc {
 			user = *savedUser
 		}
 
-		fmt.Println("check", user)
-
 		needUpdate := false
 		if user.UsersAvatar == "" {
 			user.UsersAvatar = headerUser.Avatar
@@ -58,7 +55,7 @@ func CheckRegisterMiddleware() gin.HandlerFunc {
 			config.DB.Collection("Users").UpdateByID(c, user.UsersId, bson.D{{Key: "$set", Value: bson.D{{Key: "users_avatar", Value: user.UsersAvatar}, {Key: "users_username", Value: user.UsersUsername}}}})
 		}
 
-		c.Set("user", user)
+		c.Set("user", &user)
 
 	}
 }
