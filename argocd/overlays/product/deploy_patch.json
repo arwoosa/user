@@ -1,0 +1,12 @@
+[
+  {
+    "op": "replace",
+    "path": "/spec/template/spec/containers/0/image",
+    "value": "sjc.vultrcr.com/oosa/app-user:1.0.6"
+  },
+  {
+    "op": "replace",
+    "path": "/spec/replicas",
+    "value": 2
+  }
+]
