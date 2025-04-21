@@ -1,17 +1,12 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"oosa/internal/auth"
-	"oosa/internal/config"
 	"oosa/internal/helpers"
-	"oosa/internal/models"
-	"oosa/internal/structs"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -49,46 +44,9 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 
 func ssoAuth(c *gin.Context) bool {
-	headerUserId := c.GetHeader("X-User-Id")
-	if headerUserId == "" {
-		return false
-	}
-	if headerUserId == "guest" {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-USER: You are not authorized to access this resource"})
-		c.Abort()
+	if _, ok := c.Get("user"); ok {
+		c.Next()
 		return true
 	}
-
-	var headerUser structs.UserBindByHeader
-	err := c.BindHeader(&headerUser)
-	if err != nil || headerUser.Id == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-USER: You are not authorized to access this resource"})
-		c.Abort()
-		return true
-	}
-
-	var user models.Users
-	err = config.DB.Collection("Users").FindOne(context.TODO(), bson.D{{Key: "users_source_id", Value: headerUser.Id}}).Decode(&user)
-
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "AUTH01-USER: You are not authorized to access this resource"})
-		c.Abort()
-		return true
-	}
-
-	needUpdate := false
-	if user.UsersAvatar == "" {
-		user.UsersAvatar = headerUser.Avatar
-		needUpdate = true
-	}
-	if user.UsersUsername == "" {
-		user.UsersUsername = headerUser.User
-		needUpdate = true
-	}
-	if needUpdate {
-		config.DB.Collection("Users").UpdateByID(c, user.UsersId, bson.D{{Key: "$set", Value: bson.D{{Key: "users_avatar", Value: user.UsersAvatar}, {Key: "users_username", Value: user.UsersUsername}}}})
-	}
-	c.Set("user", &user)
-	c.Next()
-	return true
+	return false
 }

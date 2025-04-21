@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func OosaUserRoutes(r *gin.Engine) *gin.Engine {
+func OosaUserRoutes(r gin.IRouter) gin.IRouter {
 	repoUser := repository.OosaUserRepository{}
 	repoUserFriend := repository.UserFriendRepository{}
 	repoUserBadges := repository.OosaUserBadgesRepository{}
