@@ -5,8 +5,8 @@ steps:
   build-and-push-dev:
     image: woodpeckerci/plugin-docker-buildx
     settings:
-      build_args:
-        APP_VERSION: ${CI_COMMIT_SHA:0:8}
+      # build_args:
+      #   APP_VERSION: ${CI_COMMIT_SHA:0:8}
       repo: sjc.vultrcr.com/oosa/app-user
       dockerfile: .docker/Dockerfile.distroless
       platforms: linux/amd64,linux/arm64
