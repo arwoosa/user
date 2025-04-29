@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthRoutes(r *gin.Engine) *gin.Engine {
+func AuthRoutes(r gin.IRouter) gin.IRouter {
 	authRepo := repository.AuthRepository{}
 	forgetPasswordRepo := repository.ForgetPasswordRepository{}
 
@@ -50,7 +50,9 @@ func AuthRoutes(r *gin.Engine) *gin.Engine {
 		badges.GET("", authRepo.RetrieveBadges)
 	}
 
-	notifications := main.Group("/notifications", middleware.AuthMiddleware())
+	notifications := main.Group("/notifications",
+		middleware.CheckRegisterMiddleware(),
+		middleware.AuthMiddleware())
 	{
 		notifications.GET("", authRepo.RetrieveNotifications)
 	}
