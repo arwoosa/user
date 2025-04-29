@@ -12,9 +12,10 @@ func OosaUserRoutes(r gin.IRouter) gin.IRouter {
 	repoUserFriend := repository.UserFriendRepository{}
 	repoUserBadges := repository.OosaUserBadgesRepository{}
 
+	r.GET("/user/:id", repoUser.Read)
+
 	me := r.Group("/user/:id", middleware.AuthMiddleware())
 	{
-		me.GET("", repoUser.Read)
 		me.GET("badges", repoUserBadges.Retrieve)
 		me.GET("friends", repoUserFriend.RetrieveOther)
 	}
