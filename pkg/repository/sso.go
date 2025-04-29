@@ -14,7 +14,6 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -65,19 +64,8 @@ func (t ssoRepository) Register(c *gin.Context) {
 		helpers.ResponseBadRequestError(c, "missing return_to")
 		return
 	}
-	registerUrl := *c.Request.URL
-	registerUrl.Scheme, registerUrl.Host = getSchemeAndHost(c)
-	state := uuid.NewString()
-	mysession := sessions.Default(c)
-	mysession.Options(sessions.Options{Secure: true, HttpOnly: true, MaxAge: 300, SameSite: http.SameSiteLaxMode, Path: "/"})
-	mysession.Set("state", state)
-	registerUrl.Path = fmt.Sprintf("/api%s/finish", registerUrl.Path)
-	registerUrl.RawQuery = fmt.Sprintf("state=%s", state)
 
-	t.ssoRegisterUrl.RawQuery = fmt.Sprintf("return_to=%s", url.QueryEscape(registerUrl.String()))
-	mysession.Set("return_to", c.Query("return_to"))
-
-	mysession.Save()
+	t.ssoRegisterUrl.RawQuery = fmt.Sprintf("return_to=%s", url.QueryEscape(c.Query("return_to")))
 	c.Redirect(http.StatusSeeOther, t.ssoRegisterUrl.String())
 }
 
