@@ -175,7 +175,13 @@ func CheckPassword(password string, match string) bool {
 }
 
 func GetAuthUser(c *gin.Context) models.Users {
-	user, _ := c.Get("user")
+	user, exists := c.Get("user")
+	if !exists {
+		return models.Users{
+			UsersId:   primitive.ObjectID{},
+			UsersName: "guest",
+		}
+	}
 	userDetail := user.(*models.Users)
 
 	return *userDetail

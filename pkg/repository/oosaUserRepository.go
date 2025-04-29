@@ -28,51 +28,60 @@ func (r OosaUserRepository) Read(c *gin.Context) {
 		return
 	}
 
-	// 添加追蹤關係
-	var UserFollowing models.UserFollowings
-	UserFollowingFilter := bson.D{
-		{Key: "user_followings_user", Value: userDetail.UsersId},
-		{Key: "user_followings_following", Value: User.UsersId},
-	}
-	UserFollowingErr := config.DB.Collection("UserFollowings").FindOne(context.TODO(), UserFollowingFilter).Decode(&UserFollowing)
-	if UserFollowingErr == nil {
-		User.UsersFollowings = &UserFollowing
-	}
-
-	// 添加好友關係信息
+	// 設置默認值
 	userFriendStatus := "stranger"
-	if userDetail.UsersId == User.UsersId {
-		userFriendStatus = "myself"
-	} else {
-		var UserFriends models.UserFriends
-		UserFriendsFilter := bson.D{
-			{Key: "$or", Value: []bson.D{
-				{
-					{Key: "user_friends_user_1", Value: userDetail.UsersId},
-					{Key: "user_friends_user_2", Value: User.UsersId},
-				},
-				{
-					{Key: "user_friends_user_1", Value: User.UsersId},
-					{Key: "user_friends_user_2", Value: userDetail.UsersId},
-				},
-			}},
+	var UserFollowing *models.UserFollowings = nil
+
+	// 判斷當前用戶是否為 guest 用戶（UsersId 為空）
+	isGuest := userDetail.UsersId.IsZero()
+
+	if !isGuest {
+		// 添加追蹤關係
+		var userFollowing models.UserFollowings
+		UserFollowingFilter := bson.D{
+			{Key: "user_followings_user", Value: userDetail.UsersId},
+			{Key: "user_followings_following", Value: User.UsersId},
+		}
+		UserFollowingErr := config.DB.Collection("UserFollowings").FindOne(context.TODO(), UserFollowingFilter).Decode(&userFollowing)
+		if UserFollowingErr == nil {
+			UserFollowing = &userFollowing
+			User.UsersFollowings = UserFollowing
 		}
 
-		UserFriendsErr := config.DB.Collection("UserFriends").FindOne(context.TODO(), UserFriendsFilter).Decode(&UserFriends)
-		if UserFriendsErr == nil {
-			// 將狀態碼轉換為文字狀態
-			// USER_RECOMMENDED = 0, USER_PENDING = 1, USER_ACCEPTED = 2, USER_CANCELLED = 3
-			switch *UserFriends.UserFriendsStatus {
-			case 2: // USER_ACCEPTED
-				userFriendStatus = "friend"
-			case 1: // USER_PENDING
-				// 判斷是誰發出的邀請
-				if (UserFriends.UserFriendsUser1 == userDetail.UsersId && UserFriends.UserFriendsUser2 == User.UsersId) ||
-					(UserFriends.UserFriendsUser2 == userDetail.UsersId && UserFriends.UserFriendsUser1 == User.UsersId) {
-					userFriendStatus = "invited"
+		// 添加好友關係信息
+		if userDetail.UsersId == User.UsersId {
+			userFriendStatus = "myself"
+		} else {
+			var UserFriends models.UserFriends
+			UserFriendsFilter := bson.D{
+				{Key: "$or", Value: []bson.D{
+					{
+						{Key: "user_friends_user_1", Value: userDetail.UsersId},
+						{Key: "user_friends_user_2", Value: User.UsersId},
+					},
+					{
+						{Key: "user_friends_user_1", Value: User.UsersId},
+						{Key: "user_friends_user_2", Value: userDetail.UsersId},
+					},
+				}},
+			}
+
+			UserFriendsErr := config.DB.Collection("UserFriends").FindOne(context.TODO(), UserFriendsFilter).Decode(&UserFriends)
+			if UserFriendsErr == nil {
+				// 將狀態碼轉換為文字狀態
+				// USER_RECOMMENDED = 0, USER_PENDING = 1, USER_ACCEPTED = 2, USER_CANCELLED = 3
+				switch *UserFriends.UserFriendsStatus {
+				case 2: // USER_ACCEPTED
+					userFriendStatus = "friend"
+				case 1: // USER_PENDING
+					// 判斷是誰發出的邀請
+					if (UserFriends.UserFriendsUser1 == userDetail.UsersId && UserFriends.UserFriendsUser2 == User.UsersId) ||
+						(UserFriends.UserFriendsUser2 == userDetail.UsersId && UserFriends.UserFriendsUser1 == User.UsersId) {
+						userFriendStatus = "invited"
+					}
+				default:
+					userFriendStatus = "stranger"
 				}
-			default:
-				userFriendStatus = "stranger"
 			}
 		}
 	}
@@ -115,8 +124,8 @@ func (r OosaUserRepository) Read(c *gin.Context) {
 	}
 
 	// 如果有追蹤關係，添加到響應中
-	if User.UsersFollowings != nil {
-		response["users_followings"] = User.UsersFollowings
+	if UserFollowing != nil {
+		response["users_followings"] = UserFollowing
 	}
 
 	c.JSON(http.StatusOK, response)
