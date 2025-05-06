@@ -3,9 +3,12 @@ package repository
 import (
 	"context"
 	"net/http"
+	"oosa/internal/auth"
 	"oosa/internal/config"
 	"oosa/internal/helpers"
 	"oosa/internal/models"
+
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +23,20 @@ func (r OosaUserRepository) Read(c *gin.Context) {
 	userId, _ := primitive.ObjectIDFromHex(userIdVal)
 	userDetail := helpers.GetAuthUser(c)
 
+	// 檢查是否為guest用戶但有Authorization頭部，嘗試使用Bearer Token身份驗證
+	isGuest := userDetail.UsersId.IsZero()
+	if isGuest {
+		reqToken := c.Request.Header.Get("Authorization")
+		if reqToken != "" && len(strings.Split(reqToken, "Bearer ")) > 1 {
+			tokenStr := strings.Split(reqToken, "Bearer ")[1]
+			user, err := auth.VerifyToken(tokenStr)
+			if err == nil && !helpers.MongoZeroID(user.UsersId) {
+				userDetail = user
+				isGuest = false
+			}
+		}
+	}
+
 	var User models.Users
 	err := r.ReadUserById(userId, &User)
 
@@ -33,8 +50,6 @@ func (r OosaUserRepository) Read(c *gin.Context) {
 	var UserFollowing *models.UserFollowings = nil
 
 	// 判斷當前用戶是否為 guest 用戶（UsersId 為空）
-	isGuest := userDetail.UsersId.IsZero()
-
 	if !isGuest {
 		// 添加追蹤關係
 		var userFollowing models.UserFollowings
